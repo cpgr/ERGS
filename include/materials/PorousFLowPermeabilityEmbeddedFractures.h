@@ -1,6 +1,8 @@
 #pragma once
 
 #include "PorousFlowPermeabilityBase.h"
+#include <Eigen/Eigenvalues>
+#include <Eigen/Geometry>
 
 /**
  * Material designed to provide the permeability tensor which is a function of
@@ -32,37 +34,22 @@ protected:
 	const Real _a;
 
 	/// Threshold strain
-	const Real _eps0;
+	const Real _e0;
 
 	/// matrix/intrinsic permeability
 	const Real _km;
 
-
-
 	/// Initial fracture aperture b_0 = sqrt(12 * k_m)
 	const Real _b0;
 
-	/// Structure tensor M_{ij} = n⊗n
-	const RankTwoTensor _M;
+	/// Structure tensor M_{ij} = n⊗n {not used}
+	// const RankTwoTensor _M;
 
 	///  Identity RankTwotensor I_{ij}
 	const RankTwoTensor _identity_two;
 
-	/// Tensor multiplier k_ijk in k = k_ijk * A * phi^n / (1 - phi)^m
-	const RealTensorValue _k_anisotropy;
-
 	/// Strain (first const means we never want to dereference and change the value, second means we'll always be pointing to the same address after initialization (like a reference))
   const MaterialProperty<Real> * const _vol_strain_qp;
 
-  /// d(strain)/(dvar) (first const means we never want to dereference and change the value, second means we'll always be pointing to the same address after initialization (like a reference))
-  const MaterialProperty<std::vector<RealGradient>> * const _dvol_strain_qp_dvar;
-
-/*
-	/// d(quadpoint porosity)/d(grad(PorousFlow variable))
-	const MaterialProperty<std::vector<RealGradient>>& _dporosity_qp_dgradvar;
-
-	/// Name of strain-permeability relationship
-	const enum class PoropermFunction { embedded_fracture_perm} _poroperm_function;
-*/
 
 };
