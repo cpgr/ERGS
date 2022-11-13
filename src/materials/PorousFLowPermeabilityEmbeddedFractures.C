@@ -25,7 +25,10 @@ PorousFLowPermeabilityEmbeddedFractures::validParams()
     params.addRequiredParam<Real>("km", "matrix/intrinsic permeability");
     // 'n' has to be obtained as a 3x1 vector normal to the fracture surface from the
     //  input file but i'm not sure if this next line of code can do that.
-    params.addRequiredParam<Eigen::Matrix<double, 3, 1>>("n","fracture_normal");
+    params.addRequiredParam<RealEigenMatrix>("n",
+                           "normal vector wrt to fracture surface");
+    // params.addRequiredParam<Eigen::Matrix<double, 3, 1>>("n","normal vector wrt to fracture surface");
+
 
     params.addParam<bool>("normal_vector_to_fracture_is_constant",
                       false,
@@ -42,7 +45,9 @@ PorousFLowPermeabilityEmbeddedFractures::PorousFLowPermeabilityEmbeddedFractures
     _identity_two(RankTwoTensor::initIdentity),
 
     // see the comment above. not sure of this next line of code
-    _n(getParam<Eigen::Matrix<double, 3, 1>>("n")),
+    _n(getParam<RealEigenMatrix>("n")),
+    //_n(getParam<Eigen::Matrix<double, 3, 1>>("n")),
+
 
     _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
     _vol_strain_qp(_mechanical ? &getMaterialProperty<Real>("PorousFlow_total_volumetric_strain_qp")
@@ -112,13 +117,13 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
 
      // not sure how to compute the tensor I here. either one of these two might suffix
      Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
-     RankTwoTensor I = _identity_two;
+    // RankTwoTensor I = _identity_two;
 
 
-     // finally, the permeability
+     // finally, the permeability.
      _permeability_qp[_qp] =
-     (_km*I) + (coeff * (I - n_r * n_r.transpose())
-      (_k_anisotropy * _km*_identity_two) + (b/_a)*(std::pow(b,2)/12.-_km)*(_identity_two);
+     (_km*I) + (coeff * (I - n_r * n_r.transpose());
+    //  (_k_anisotropy * _km*_identity_two) + (b/_a)*(std::pow(b,2)/12.-_km)*(_identity_two);
 
 
  // The computation of this material does not include its derivatives (jacobian)
