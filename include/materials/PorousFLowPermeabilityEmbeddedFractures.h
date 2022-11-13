@@ -15,7 +15,7 @@
  * where b is the fracture aperture given by: b_0 + /Delta{b}
  * /Delta{b} depends on the strain (/epsilon) as follows:
  * /Delta{b} = a * 〈/epsilon_n -/epsilon_0〉. Here, /epsilon_0 is a threshold strain
- * and /epsilon_n is the computed strain normal to the embedded fracture direction.
+ * and /epsilon_n is the computed strain normal to the embedded fracture plane/surface.
  * a is mean fracture distance, b is fracture aperture, K_m is matrix/intrinsic permeability.
  * I_{ij} is the identity tensor and M_{ij} is a structure tensor given as n⊗n. n is a vector normal
  * to the fracture.
