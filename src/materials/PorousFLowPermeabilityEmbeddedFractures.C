@@ -65,20 +65,23 @@ void
 PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
 {
   // not entirely sure how to go about the implementation here. the code block below is supposed
-  // to be implemented as a lambda function, see line 63 to 73 of the opengeosys (OGS) code. The code block describes
-  // how the 'normal vector' (n) wrt the fracture face should be computed. if n is constant, then
-  // it should be obtain from the input file, otherwise, it is computed by obtaining the applied stress as shown below.
+  // to be implemented as a lambda function, see line 63 to 73 of the opengeosys (OGS) code.
+  // The code block describes how the 'normal vector' (n) wrt the fracture face should be computed.
+  // if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx) , then
+  // it should be obtain from the input file. Otherwise, n is computed as the direction (eigenvector)
+  // of the third principal stress vector.
+
   Eigen::Matrix<double, 3, 1> const n = [&]
    {
        if (_n_const)
        {
            return _n;
        }
-       auto const sigma = // I need to obtain the applied stress and convert it to
-                          // a symmetric tensor here, but don't know how to obtain the stress.
+       auto const sigma = // I need to obtain the computed stress tensor and convert it to
+                          // a symmetric tensor here, but don't know how to obtain the stress tensor.
                           // After obtaining the symmetric stress tensor, the 'Eigen library' functions
-                          // was used to obtain a column 2 of its eigen vectors as 'n'. See line 69 to
-                          // 72 of the OGS code.
+                          // were used to obtain the eigen vector corresponding to the third principal stress.
+                          // This eigenvector corresponds to 'n'. See line 69 to 72 of the OGS code.
 
    }();
 
