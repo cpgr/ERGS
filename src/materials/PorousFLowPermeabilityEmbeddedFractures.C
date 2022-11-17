@@ -23,13 +23,20 @@ PorousFLowPermeabilityEmbeddedFractures::validParams()
                                       "Mean (scalar) fracture distance value");
     params.addRequiredParam<Real>("e0", "threshold strain");
     params.addRequiredParam<Real>("km", "matrix/intrinsic permeability");
-    // 'n' has to be obtained as a 3x1 vector normal to the fracture surface from the
-    //  input file but i'm not sure if this next line of code can do that.
+    params.addRequiredParam<Real>("b0", "initial fracture aperture");
     params.addRequiredParam<RealEigenMatrix>("n",
                            "normal vector wrt to fracture surface");
-    // params.addRequiredParam<Eigen::Matrix<double, 3, 1>>("n","normal vector wrt to fracture surface");
-
-
+  // params.addRequiredParam<Eigen::Matrix<double, 3, 1>>("n","normal vector wrt to fracture surface");
+    params.addParam<std::string>("base_name",
+                             "Optional parameter that allows the user to define "
+                             "multiple mechanics material systems on the same "
+                             "block, i.e. for multiple phases");
+    params.addParam<std::string>("fracture_rotation_xy",
+                            "name for the input that hold the angle (in radius)"
+                            "by which the fracture normal is rotated in the xy-plane");
+    params.addParam<std::string>("fracture_rotation_yz",
+                             "name for the input that hold the angle (in radius)"
+                             "by which the fracture normal is rotated in the yz-plane");
     params.addParam<bool>("normal_vector_to_fracture_is_constant",
                       false,
                       "Whether the normal vector wrt to fracture surface is constant or not.");
@@ -41,15 +48,15 @@ PorousFLowPermeabilityEmbeddedFractures::PorousFLowPermeabilityEmbeddedFractures
   : PorousFlowPermeabilityBase(parameters),
     _a(getParam<Real>("a")),
     _e0(getParam<Real>("e0")),
+    _b0(getParam<Real>("b0")),
     _km(getParam<Real>("km")),
     _identity_two(RankTwoTensor::initIdentity),
-
-    // see the comment above. not sure of this next line of code
     _n(getParam<RealEigenMatrix>("n")),
     //_n(getParam<Eigen::Matrix<double, 3, 1>>("n")),
-
-
     _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
+    _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
+    _phi_xy(getParam<std::string>("fracture_rotation_xy")),
+    _phi_yz(getParam<std::string>("fracture_rotation_yz")),
     _vol_strain_qp(_mechanical ? &getMaterialProperty<Real>("PorousFlow_total_volumetric_strain_qp")
                                                : nullptr),
   //  _dvol_strain_qp_dvar(_mechanical ? &getMaterialProperty<std::vector<RealGradient>>(
@@ -64,45 +71,41 @@ PorousFLowPermeabilityEmbeddedFractures::PorousFLowPermeabilityEmbeddedFractures
 void
 PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
 {
-  // not entirely sure how to go about the implementation here. the code block below is supposed
-  // to be implemented as a lambda function, see line 63 to 73 of the opengeosys (OGS) code.
-  // The code block describes how the 'normal vector' (n) wrt the fracture face should be computed.
-  // if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx) , then
-  // it should be obtain from the input file. Otherwise, n is computed as the direction (eigenvector)
-  // of the third principal stress vector.
-
+  // This code block describes how the 'normal vector' (n) wrt the fracture face
+  // should be computed. if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx),
+  // then it should be obtain from the input file. Otherwise, n is computed as the
+  // direction (eigenvector) of the third principal stress vector.
   Eigen::Matrix<double, 3, 1> const n = [&]
    {
        if (_n_const)
        {
            return _n;
        }
-       auto const sigma = // I need to obtain the computed stress tensor and convert it to
-                          // a symmetric tensor here, but don't know how to obtain the stress tensor.
-                          // After obtaining the symmetric stress tensor, the 'Eigen library' functions
-                          // were used to obtain the eigen vector corresponding to the third principal stress.
-                          // This eigenvector corresponds to 'n'. See line 69 to 72 of the OGS code.
 
+       // Here, eigenvectors were derived from the total stress obtained from
+       // the tensor mech. action. Then, the eigenvector in the second column
+       // corresponding to the third principal stress vector was computed.
+       // Similar to line 69 to 72 of the OGS code.
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 3, 3>> e_s(_stress);
+        return (Eigen::Matrix<double, 3, 1>)e_s.eigenvectors().col(2);
    }();
 
-   // here, the Z axis vector is rotated together with the material around fixed X-Y axis using
-   // (am assuming) a position vector (pos) and time (t) passed as an argument to _phi_xy on line 76.
-   // of the OGS code. I think these arguments should be in the InputParameters list (I might be wrong).
+   // Here, the Z axis of the material is rotated around fixed X-Y axis based on
+   // quad point (_qp) and time (_dt). Both _qp and _dt are passed as an argument to _phi_xy.
+   // Same is true for X axis.
     Real const rotMat_xy =
-    Eigen::AngleAxisd(_phi_xy(t, pos)[0], Eigen::Vector3d::UnitZ());
+    Eigen::AngleAxisd(_phi_xy(_dt, _qp))[0], Eigen::Vector3d::UnitZ());
 
-    // Similarly, here, the X axis vector is rotated together with the material around fixed Y-Z axis using
-    // pos and t as arguments.
     Real const rotMat_yz =
-    Eigen::AngleAxisd(_phi_yz(t, pos)[0], Eigen::Vector3d::UnitX());
+    Eigen::AngleAxisd(_phi_yz(_dt, _qp))[0], Eigen::Vector3d::UnitX());
 
     // finally, the normal vector is re-computed to always remain normal even during rotation
     // of the material (i.e., wrt to the rotated fracture plane (n_r)) by multiplying n with the
     // rotated material about the fix x-y and y-z axis (rotMat_xy and rotMat_yz)
-     Eigen::Matrix<double, 3, 1> const n_r = rotMat_yz * (rotMat_xy * n);
+     Eigen::Matrix<double, 3, 1> const n_r = rotMat_yz * (rotMat_xy * _n);
 
     // Here, the strain was obtained and multiplied by the normal vector. see line 85 of OGS code.
-    // I'm not sure whether the way I obtained the strain is the best.
+    // Not sure the way I obtained the strain is the best.
      Real e_n = (_vol_strain_qp * n_r).dot(n_r.transpose());
 
     // H_de implements the macaulay-bracket in Zill et al. since _e0 is the initial/threshold
@@ -114,21 +117,15 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
      Real _b0 = std::sqrt(12. * _km);
 
      // change in fracture aperture
-     Real b_f = _b0 + H_de * _a * (e_n - _e0);
+     Real b_f = _b0 + (H_de * _a * (e_n - _e0));
 
-     Real coeff = H_de * (b_f / _a) * ((b_f * b_f / 12.0) - _k);
+     Real coeff = H_de * (b_f / _a) * ((b_f * b_f / 12.0) - _km);
 
-     // not sure how to compute the tensor I here. either one of these two might suffix
-     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
-    // RankTwoTensor I = _identity_two;
+     RankTwoTensor I = _identity_two;
+     RankTwoTensor _M = n_r * n_r.transpose();
 
-
-     // finally, the permeability.
-     _permeability_qp[_qp] =
-     (_km*I) + (coeff * (I - n_r * n_r.transpose());
-    //  (_k_anisotropy * _km*_identity_two) + (b/_a)*(std::pow(b,2)/12.-_km)*(_identity_two);
-
+     // Finally, the permeability
+     _permeability_qp[_qp] = (_km*I) + (coeff * (I - M));
 
  // The computation of this material does not include its derivatives (jacobian)
-  }
 }
