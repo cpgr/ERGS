@@ -3,6 +3,7 @@
 #include "PorousFlowPermeabilityBase.h"
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
+#include "RankTwoTensor.h"
 
 /**
  * Material designed to provide the permeability tensor which is a function of
@@ -27,6 +28,10 @@ public:
 
 	PorousFLowPermeabilityEmbeddedFractures(const InputParameters& parameters);
 
+	using Material::_qp;
+	using Material::_dt;
+  using Material::_q_point;
+
 protected:
 	void computeQpProperties() override;
 
@@ -42,11 +47,26 @@ protected:
 	/// Initial fracture aperture b_0 = sqrt(12 * k_m)
 	const Real _b0;
 
+	/// whether normal vector to fracture is constant or not
+	bool _n_const;
+
+	/// normal vector to fracture surface
+	RealEigenMatrix _n;
+
+	/// string to hold the name of the fracture rotation angle around xy
+	std::string _phi_xy;
+
+	/// string to hold the name of the fracture rotation angle around yz
+	std::string _phi_yz;
+
 	/// Structure tensor M_{ij} = n⊗n {not used}
-	// const RankTwoTensor _M;
+  const RankTwoTensor _M;
 
 	///  Identity RankTwotensor I_{ij}
 	const RankTwoTensor _identity_two;
+
+	/// stress
+  const MaterialProperty<RankTwoTensor> & _stress;
 
 	/// Strain (first const means we never want to dereference and change the value, second means we'll always be pointing to the same address after initialization (like a reference))
   const MaterialProperty<Real> * const _vol_strain_qp;
