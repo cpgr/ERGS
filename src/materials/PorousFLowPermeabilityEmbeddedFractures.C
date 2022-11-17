@@ -86,7 +86,7 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
        // the tensor mech. action. Then, the eigenvector in the second column
        // corresponding to the third principal stress vector was computed.
        // Similar to line 69 to 72 of the OGS code.
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 3, 3>> e_s(_stress);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 3, 3>> e_s(_stress);
         return (Eigen::Matrix<double, 3, 1>)e_s.eigenvectors().col(2);
    }();
 
