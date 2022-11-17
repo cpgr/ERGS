@@ -35,6 +35,9 @@ public:
 protected:
 	void computeQpProperties() override;
 
+	/// optional parameter that allows multiple mechanics materials to be defined
+  const std::string _base_name;
+
 	/// mean fracture distance
 	const Real _a;
 
@@ -65,11 +68,11 @@ protected:
 	///  Identity RankTwotensor I_{ij}
 	const RankTwoTensor _identity_two;
 
-	/// stress
-    const MaterialProperty<RankTwoTensor> & _stress;
+	/// get the stress tensor
+  const MaterialProperty<RankTwoTensor> & _stress;
 
-	/// Strain (first const means we never want to dereference and change the value, second means we'll always be pointing to the same address after initialization (like a reference))
-    const MaterialProperty<Real> * const _vol_strain_qp;
+  /// get the strain tensor (actually, this is the creep strain)
+  const MaterialProperty<RankTwoTensor> & _strain;
 
 
 };
