@@ -53,12 +53,12 @@ PorousFLowPermeabilityEmbeddedFractures::PorousFLowPermeabilityEmbeddedFractures
     _identity_two(RankTwoTensor::initIdentity),
     _n(getParam<RealEigenMatrix>("n")),
     //_n(getParam<Eigen::Matrix<double, 3, 1>>("n")),
+    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
     _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
     _phi_xy(getParam<std::string>("fracture_rotation_xy")),
     _phi_yz(getParam<std::string>("fracture_rotation_yz")),
-    _vol_strain_qp(_mechanical ? &getMaterialProperty<Real>("PorousFlow_total_volumetric_strain_qp")
-                                               : nullptr),
+    _strain(getMaterialProperty<RankTwoTensor>("creep_strain"))
   //  _dvol_strain_qp_dvar(_mechanical ? &getMaterialProperty<std::vector<RealGradient>>(
   //                              "dPorousFlow_total_volumetric_strain_qp_dvar")
   //                                                   : nullptr),
@@ -94,10 +94,10 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
    // quad point (_qp) and time (_dt). Both _qp and _dt are passed as an argument to _phi_xy.
    // Same is true for X axis.
     Real const rotMat_xy =
-    Eigen::AngleAxisd(_phi_xy(_dt, _qp))[0], Eigen::Vector3d::UnitZ());
+    Eigen::AngleAxisd(_phi_xy(_dt, _qp)[0], Eigen::Vector3d::UnitZ());
 
     Real const rotMat_yz =
-    Eigen::AngleAxisd(_phi_yz(_dt, _qp))[0], Eigen::Vector3d::UnitX());
+    Eigen::AngleAxisd(_phi_yz(_dt, _qp)[0], Eigen::Vector3d::UnitX());
 
     // finally, the normal vector is re-computed to always remain normal even during rotation
     // of the material (i.e., wrt to the rotated fracture plane (n_r)) by multiplying n with the
@@ -106,7 +106,7 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
 
     // Here, the strain was obtained and multiplied by the normal vector. see line 85 of OGS code.
     // Not sure the way I obtained the strain is the best.
-     Real e_n = (_vol_strain_qp * n_r).dot(n_r.transpose());
+     Real e_n = (_strain * n_r).dot(n_r.transpose());
 
     // H_de implements the macaulay-bracket in Zill et al. since _e0 is the initial/threshold
     // strain state of the material, and strain is always increasing in n-direction, e_n should
