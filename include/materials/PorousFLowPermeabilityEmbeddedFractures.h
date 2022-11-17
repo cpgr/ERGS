@@ -60,16 +60,16 @@ protected:
 	std::string _phi_yz;
 
 	/// Structure tensor M_{ij} = n⊗n {not used}
-  const RankTwoTensor _M;
+    const RankTwoTensor _M;
 
 	///  Identity RankTwotensor I_{ij}
 	const RankTwoTensor _identity_two;
 
 	/// stress
-  const MaterialProperty<RankTwoTensor> & _stress;
+    const MaterialProperty<RankTwoTensor> & _stress;
 
 	/// Strain (first const means we never want to dereference and change the value, second means we'll always be pointing to the same address after initialization (like a reference))
-  const MaterialProperty<Real> * const _vol_strain_qp;
+    const MaterialProperty<Real> * const _vol_strain_qp;
 
 
 };
