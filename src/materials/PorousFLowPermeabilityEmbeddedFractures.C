@@ -26,7 +26,7 @@ PorousFLowPermeabilityEmbeddedFractures::validParams()
     params.addRequiredParam<Real>("b0", "initial fracture aperture");
     params.addRequiredParam<Real>("rad_xy", "fracture rotation angle in radians");
     params.addRequiredParam<Real>("rad_yz", "fracture rotation angle in radians");
-    params.addRequiredParam<RealEigenMatrix>("n",
+    params.addParam<RealVectorValue>("n",
                            "normal vector wrt to fracture surface");
     params.addParam<std::string>("base_name",
                              "Optional parameter that allows the user to define "
@@ -34,7 +34,7 @@ PorousFLowPermeabilityEmbeddedFractures::validParams()
                              "block, i.e. for multiple phases");
     params.addParam<bool>("normal_vector_to_fracture_is_constant",
                       false,
-                      "Whether the normal vector wrt to fracture surface is constant or not.");
+                      "Whether the normal vector wrt to fracture surface is constant/known or not.");
   return params;
 }
 
@@ -45,6 +45,7 @@ PorousFLowPermeabilityEmbeddedFractures::PorousFLowPermeabilityEmbeddedFractures
     _e0(getParam<Real>("e0")),
     _b0(getParam<Real>("b0")),
     _km(getParam<Real>("km")),
+    _nVec(getParam<Real>("n")),
     _identity_two(RankTwoTensor::initIdentity),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
@@ -71,7 +72,7 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
 
    if (_n_const)
        {
-          RealVectorValue _n (0.0, 0.0, 1.0);
+          RealVectorValue _n =_nVec;
        }
  // Eigenvectors were derived from the total stress obtained from the tensor mech. action.
  // Then, the eigenvector in the second column corresponding to the third principal stress
