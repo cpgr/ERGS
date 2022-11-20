@@ -54,8 +54,7 @@ protected:
 	bool _n_const;
 
 	/// normal vector to fracture surface
-	//RealEigenMatrix _n;
-	VectorValue<Real> _n;
+	RealVectorValue _nVec;
 
 	/// string to hold the name of the fracture rotation angle around xy
 	std::string _phi_xy;
