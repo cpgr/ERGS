@@ -83,7 +83,12 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
       _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
       RealVectorValue _n = eigvec.column(2);
 
-// The Z axis of the material is rotated around the X-Y plane.
+  // To rotatate the fracture normal vector around the Z-axis (X-Y plane) during random
+  // rotation of the material,the Z-unit axis is rotated first. Hence rotating the material
+  // by a magnitude. Then the magnitude of rotation is multiplied by the fracture normal
+  // vector. (See Zill et al. for why material is randomly rotated)
+
+    RealVectorValue UnitZ(0.0, 0.0, 1.0);
     RankTwoTensor _transformation_matrix;
 
     _transformation_matrix(0, 0) = std::cos(_rad_xy);
@@ -96,7 +101,13 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
     _transformation_matrix(2, 1) = 0;
     _transformation_matrix(2, 2) = 1;
 
-// Similarly, X-axis is rotated around the Y-Z plane.
+    RealVectorValue rotMat_xy = _transformation_matrix * UnitZ;
+
+// Similarly, the magnitude of rotation is necessary to rotate the fracture normal vector
+// around  the X-axis (Y-Z plane)
+
+    RealVectorValue UnitX(1.0, 0.0, 0.0);
+
     _transformation_matrix(0, 0) = 1;
     _transformation_matrix(0, 1) = 0;
     _transformation_matrix(0, 2) = 0;
@@ -107,17 +118,12 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
     _transformation_matrix(2, 1) = -std::sin(_rad_yz);
     _transformation_matrix(2, 2) = std::cos(_rad_yz);
 
-    RealVectorValue rotMat_xy = _transformation_matrix * _n;
-    RealVectorValue rotMat_yz = _transformation_matrix * _n;
+    RealVectorValue rotMat_yz = _transformation_matrix * UnitX;
 
-  // finally, the normal vector is re-computed to always remain normal even during rotation
-  // of the material (i.e., wrt to the rotated fracture plane (n_r)) by multiplying n with the
-  // rotated material about the fix x-y and y-z axis (rotMat_xy and rotMat_yz)
-
+  // Finally, the fracture normal vector is rotated using the magnitudes of rotation
     RealVectorValue n_r = rotMat_xy * rotMat_yz * _n;
 
-  // strain in the normal fracture direction (i.e., strain dependent on the
-  // fracture normal vector
+  // strain in the normal fracture direction
 
    Real e_n = (_strain[_qp] * n_r)*(n_r);
 
@@ -140,5 +146,5 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
   // Finally, the permeability
     _permeability_qp[_qp] = (_km*I) + (coeff * (I - _M));
 
- // The computation of this material does not include its derivatives (jacobian)
+  // This permeability material model does not include its derivatives (jacobian)
 }
