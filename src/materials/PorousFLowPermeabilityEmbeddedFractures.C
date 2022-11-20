@@ -73,17 +73,16 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
        {
           RealVectorValue _n (0.0, 0.0, 1.0);
        }
- // Here, eigenvectors were derived from the total stress obtained from
- // the tensor mech. action. Then, the eigenvector in the second column
- // corresponding to the third principal stress vector was computed.
- // Similar to line 69 to 72 of the OGS code.
+ // Eigenvectors were derived from the total stress obtained from the tensor mech. action.
+ // Then, the eigenvector in the second column corresponding to the third principal stress
+ // vector was computed.
 
       RankTwoTensor eigvec;
       std::vector<Real> eigvals;
       _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
       RealVectorValue _n = eigvec.column(2);
 
-// Here, the Z axis of the material is rotated around fixed X-Y plane.
+// The Z axis of the material is rotated around the X-Y plane.
     RankTwoTensor _transformation_matrix;
 
     _transformation_matrix(0, 0) = std::cos(_rad_xy);
@@ -96,7 +95,7 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
     _transformation_matrix(2, 1) = 0;
     _transformation_matrix(2, 2) = 1;
 
-// Similarly, X-axis is rotated around fixed Y-Z plane.
+// Similarly, X-axis is rotated around the Y-Z plane.
     _transformation_matrix(0, 0) = 1;
     _transformation_matrix(0, 1) = 0;
     _transformation_matrix(0, 2) = 0;
@@ -135,7 +134,7 @@ PorousFLowPermeabilityEmbeddedFractures::computeQpProperties()
      Real coeff = H_de * (b_f / _a) * ((b_f * b_f / 12.0) - _km);
 
      RankTwoTensor I = _identity_two;
-     auto _M = RankTwoTensor::selfOuterProduct(_n);
+     auto _M = RankTwoTensor::selfOuterProduct(n_r);
 
   // Finally, the permeability
     _permeability_qp[_qp] = (_km*I) + (coeff * (I - _M));
