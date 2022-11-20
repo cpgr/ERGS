@@ -1,9 +1,9 @@
 #pragma once
 
 #include "PorousFlowPermeabilityBase.h"
-#include <Eigen/Eigenvalues>
-#include <Eigen/Geometry>
 #include "RankTwoTensor.h"
+#include <Eigen/Geometry>
+#include "libmesh/utility.h"
 
 /**
  * Material designed to provide the permeability tensor which is a function of
@@ -54,7 +54,8 @@ protected:
 	bool _n_const;
 
 	/// normal vector to fracture surface
-	RealEigenMatrix _n;
+	//RealEigenMatrix _n;
+	VectorValue<Real> _n;
 
 	/// string to hold the name of the fracture rotation angle around xy
 	std::string _phi_xy;
@@ -74,5 +75,8 @@ protected:
   /// get the strain tensor (actually, this is the creep strain)
   const MaterialProperty<RankTwoTensor> & _strain;
 
+// fracture rotation angles about xy and yz (in radians)
+  	 const Real _rad_xy;
+  	 const Real _rad_yz;
 
 };
