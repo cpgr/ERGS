@@ -124,7 +124,6 @@ PorousFlowEmbeddedFracturePermeability::computeQpProperties()
     RealVectorValue n_r = rotMat_xy * rotMat_yz * _n;
 
   // strain in the normal fracture direction
-
    Real e_n = (_strain[_qp] * n_r)*(n_r);
 
   // H_de implements the macaulay-bracket in Zill et al. since _e0 is the initial/threshold
