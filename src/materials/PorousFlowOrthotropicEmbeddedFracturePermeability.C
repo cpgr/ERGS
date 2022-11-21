@@ -61,12 +61,11 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::PorousFlowOrthotropicEmbedded
  //  _dictator.usePermDerivs(true);
 
 for (int j = 0; j < 3; j++)
-{
+ {
   if (_a[j] = 0.0)
     mooseError("PorousFlowOrthotropicEmbeddedFracturePermeability: Mean fracture distance value"
     "in any of the 3 directions has to be greater than 0.");
-}
-
+ }
 }
 
 void
