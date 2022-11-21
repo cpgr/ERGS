@@ -142,7 +142,7 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
   // strain in the each fracture normal vector direction
    Real e_n = (_strain[_qp] * n_r.column(i))*(n_r.column(i));
 
-  // H_de implements the macaulay-bracket in Zill et al.
+  // The heaviside function (H_de) that implements the macaulay-bracket in Zill et al.
    Real H_de = (e_n > _e0[i]) ? 1.0 : 0.0;
 
   // initial fracture aperture is sqrt(12 * k_m) in the literature
