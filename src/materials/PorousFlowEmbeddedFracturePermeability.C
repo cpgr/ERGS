@@ -126,9 +126,9 @@ PorousFlowEmbeddedFracturePermeability::computeQpProperties()
   // strain in the normal fracture direction
    Real e_n = (_strain[_qp] * n_r)*(n_r);
 
-  // H_de implements the macaulay-bracket in Zill et al. since _e0 is the initial/threshold
-  // strain state of the material, and strain is always increasing in n-direction, e_n should
-  // always be bigger than e_0. otherwise, H_de = 0
+  // H_de is the heaviside function that implements the macaulay-bracket in Zill et al.
+  // since _e0 is the initial/threshold strain state of the material, and strain is always
+  // increasing in n-direction, e_n should always be bigger than e_0. otherwise, H_de = 0
      Real H_de = (e_n > _e0) ? 1.0 : 0.0;
 
   // initial fracture aperture is sqrt(12 * k_m) in the literature
