@@ -30,7 +30,7 @@ public:
 
 	using Material::_qp;
 	using Material::_dt;
-  using Material::_q_point;
+    using Material::_q_point;
 
 protected:
 	void computeQpProperties() override;
@@ -39,13 +39,10 @@ protected:
   const std::string _base_name;
 
 	/// mean fracture distance in all 3 directions
-	//const RealVectorValue _a;
-  std::vector<double> _a;
+    std::vector<double> _a;
 
 	/// Threshold strain in all 3 directions
-	//const RealVectorValue _e0;
      std::vector<double> _e0;
-
 
 	/// matrix/intrinsic permeability
 	const Real _km;
