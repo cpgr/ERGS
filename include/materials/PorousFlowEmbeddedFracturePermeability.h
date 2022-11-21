@@ -77,5 +77,4 @@ protected:
 // fracture rotation angles about xy and yz (in radians)
   	 const Real _rad_xy;
   	 const Real _rad_yz;
-
 };
