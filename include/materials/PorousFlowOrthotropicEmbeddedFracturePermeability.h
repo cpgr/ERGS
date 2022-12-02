@@ -47,9 +47,6 @@ protected:
 	/// matrix/intrinsic permeability
 	const Real _km;
 
-	/// Initial fracture aperture b_0 = sqrt(12 * k_m)
-	const Real _b0;
-
 	/// whether normal vector to fracture is constant or not
 	bool _n_const;
 
