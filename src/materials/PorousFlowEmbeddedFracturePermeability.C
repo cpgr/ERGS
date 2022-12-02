@@ -23,9 +23,8 @@ PorousFlowEmbeddedFracturePermeability::validParams()
                                       "Mean (scalar) fracture distance value");
     params.addRequiredParam<Real>("e0", "threshold strain");
     params.addRequiredParam<Real>("km", "matrix/intrinsic permeability");
-    params.addRequiredParam<Real>("b0", "initial fracture aperture");
-    params.addRequiredParam<Real>("rad_xy", "fracture rotation angle in radians");
-    params.addRequiredParam<Real>("rad_yz", "fracture rotation angle in radians");
+    params.addParam<Real>("rad_xy", 0,  "fracture rotation angle in radians");
+    params.addParam<Real>("rad_yz", 0, "fracture rotation angle in radians");
     params.addParam<RealVectorValue>("n",
                            "normal vector wrt to fracture surface");
     params.addParam<std::string>("base_name",
@@ -43,23 +42,19 @@ PorousFlowEmbeddedFracturePermeability::PorousFlowEmbeddedFracturePermeability(
   : PorousFlowPermeabilityBase(parameters),
     _a(getParam<Real>("a")),
     _e0(getParam<Real>("e0")),
-    _b0(getParam<Real>("b0")),
     _km(getParam<Real>("km")),
-    _nVec(getParam<Real>("n")),
+  //  _nVec(getParam<Real>("n")),
+    _nVec(parameters.isParamValid("n")
+                  ? getParam<RealVectorValue>("n")
+                  : RealVectorValue(0.0, 0.0, 1.0)),
     _identity_two(RankTwoTensor::initIdentity),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
     _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
     _rad_xy(getParam<Real>("rad_xy")),
     _rad_yz(getParam<Real>("rad_yz")),
-    _strain(getMaterialProperty<RankTwoTensor>("creep_strain"))
-  //  _dvol_strain_qp_dvar(_mechanical ? &getMaterialProperty<std::vector<RealGradient>>(
-  //                              "dPorousFlow_total_volumetric_strain_qp_dvar")
-  //                                                   : nullptr),
+    _strain(getMaterialProperty<RankTwoTensor>("total_strain"))
 {
-
-// should be included if the derivatives/jacobian of this material is computed as well.
- //  _dictator.usePermDerivs(true);
 }
 
 void
@@ -84,7 +79,7 @@ PorousFlowEmbeddedFracturePermeability::computeQpProperties()
       RealVectorValue _n = eigvec.column(2);
 
   // To rotatate the fracture normal vector around the Z-axis (X-Y plane) during random
-  // rotation of the material,the Z-unit axis is rotated first. Hence rotating the material
+  // rotation of the material,the Z-unit axis is rotated first, thus rotating the material
   // by a magnitude. Then the magnitude of rotation is multiplied by the fracture normal
   // vector. (See Zill et al. for why material is randomly rotated)
 
@@ -127,7 +122,7 @@ PorousFlowEmbeddedFracturePermeability::computeQpProperties()
    Real e_n = (_strain[_qp] * n_r)*(n_r);
 
   // H_de is the heaviside function that implements the macaulay-bracket in Zill et al.
-  // since _e0 is the initial/threshold strain state of the material, and strain is always
+  // _e0 is the threshold strain state of the material. Strain is always
   // increasing in n-direction, e_n should always be bigger than e_0. otherwise, H_de = 0
      Real H_de = (e_n > _e0) ? 1.0 : 0.0;
 

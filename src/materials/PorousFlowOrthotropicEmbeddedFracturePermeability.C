@@ -22,9 +22,8 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::validParams()
     params.addRequiredParam<std::vector<double>>("a", "Mean fracture distance value in all 3 directions");
     params.addRequiredParam<std::vector<double>>("e0", "threshold strain");
     params.addRequiredParam<Real>("km", "matrix/intrinsic permeability");
-    params.addRequiredParam<Real>("b0", "initial fracture aperture");
-    params.addRequiredParam<Real>("rad_xy", "fracture rotation angle in radians");
-    params.addRequiredParam<Real>("rad_yz", "fracture rotation angle in radians");
+    params.addParam<Real>("rad_xy", 0, "fracture rotation angle in radians");
+    params.addParam<Real>("rad_yz", 0, "fracture rotation angle in radians");
     params.addParam<RealTensorValue>("n",
                            "normal vector wrt to fracture surface");
     params.addParam<std::string>("base_name",
@@ -42,24 +41,18 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::PorousFlowOrthotropicEmbedded
   : PorousFlowPermeabilityBase(parameters),
     _a(getParam<std::vector<double>>("a")),
     _e0(getParam<std::vector<double>>("e0")),
-    _b0(getParam<Real>("b0")),
     _km(getParam<Real>("km")),
-    _nVec(getParam<RealTensor>("n")),
+    _nVec(parameters.isParamValid("n")
+                  ? getParam<RealTensorValue>("n")
+                  : RealTensorValue(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)),
     _identity_two(RankTwoTensor::initIdentity),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
     _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
     _rad_xy(getParam<Real>("rad_xy")),
     _rad_yz(getParam<Real>("rad_yz")),
-    _strain(getMaterialProperty<RankTwoTensor>("creep_strain"))
-  //  _dvol_strain_qp_dvar(_mechanical ? &getMaterialProperty<std::vector<RealGradient>>(
-  //                              "dPorousFlow_total_volumetric_strain_qp_dvar")
-  //                                                   : nullptr),
+    _strain(getMaterialProperty<RankTwoTensor>("total_strain"))
 {
-
-// should be included if the derivatives/jacobian of this material is computed as well.
- //  _dictator.usePermDerivs(true);
-
 for (int j = 0; j < 3; j++)
  {
   if (_a[j] = 0.0)

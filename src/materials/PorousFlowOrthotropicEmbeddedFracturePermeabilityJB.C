@@ -22,9 +22,8 @@ PorousFlowOrthotropicEmbeddedFracturePermeabilityJB::validParams()
     params.addRequiredParam<std::vector<double>>("a", "Mean fracture distance value in all 3 directions");
     params.addRequiredParam<std::vector<double>>("e0", "threshold strain");
     params.addRequiredParam<Real>("km", "matrix/intrinsic permeability");
-    params.addRequiredParam<Real>("b0", "initial fracture aperture");
-    params.addRequiredParam<Real>("rad_xy", "fracture rotation angle in radians");
-    params.addRequiredParam<Real>("rad_yz", "fracture rotation angle in radians");
+    params.addParam<Real>("rad_xy", 0, "fracture rotation angle in radians");
+    params.addParam<Real>("rad_yz", 0, "fracture rotation angle in radians");
     params.addRequiredParam<Real>("jf", "jacobian_factor");
     params.addParam<RealTensorValue>("n",
                            "normal vector wrt to fracture surface");
@@ -43,9 +42,10 @@ PorousFlowOrthotropicEmbeddedFracturePermeabilityJB::PorousFlowOrthotropicEmbedd
   : PorousFlowPermeabilityBase(parameters),
     _a(getParam<std::vector<double>>("a")),
     _e0(getParam<std::vector<double>>("e0")),
-    _b0(getParam<Real>("b0")),
     _km(getParam<Real>("km")),
-    _nVec(getParam<RealTensor>("n")),
+    _nVec(parameters.isParamValid("n")
+                  ? getParam<RealTensorValue>("n")
+                  : RealTensorValue(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)),
     _identity_two(RankTwoTensor::initIdentity),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
@@ -53,7 +53,7 @@ PorousFlowOrthotropicEmbeddedFracturePermeabilityJB::PorousFlowOrthotropicEmbedd
     _rad_xy(getParam<Real>("rad_xy")),
     _rad_yz(getParam<Real>("rad_yz")),
     _jf(getParam<Real>("jf")),
-    _strain(getMaterialProperty<RankTwoTensor>("creep_strain"))
+    _strain(getMaterialProperty<RankTwoTensor>("total_strain"))
 {
 // A call to include the derivatives/jacobian in the computation.
    _dictator.usePermDerivs(true);
