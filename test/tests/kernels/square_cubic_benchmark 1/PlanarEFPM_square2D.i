@@ -1,18 +1,19 @@
-# HM single-phase injection of water into a simple cubic model 
-# containing planar embedded fractures 
+# HM single-phase injection of water through a simple square model
+# containing orthotropics/planar embedded fractures (from: Numerical BenchMark 1, 
+# Zill et. al.(2021): Hydro-mechanical continuum modelling of fluid percolation through rock.)
 
 [Mesh]
   [efmcube]
-  #  type = FileMeshGenerator
-  #  file = square.inp
-  type = GeneratedMeshGenerator
-  dim = 2
-  nx = 10
-  ny = 10
-  xmin = 0
- xmax = 1
-  ymin = 0
-  ymax = 1
+    type = FileMeshGenerator
+    file = square.inp
+#  type = GeneratedMeshGenerator
+#  dim = 2
+#  nx = 10
+#  ny = 10
+#  xmin = 0
+# xmax = 1
+#  ymin = 0
+#  ymax = 1
   []
 []
 
@@ -42,7 +43,7 @@
 
 [Variables]
   [pwater]
-    initial_condition = 1.01325e5       #atm
+    initial_condition = 1e5       #atm
   []
   [disp_x]
     scaling = 1E-5
@@ -125,14 +126,12 @@
   []
   [flux_water]
     type = PorousFlowAdvectiveFlux
-   # fluid_component = 0
-  # coupling_type = HydroMechanical
+   coupling_type = HydroMechanical
     variable = pwater
     use_displaced_mesh = false
   []
   [vol_strain_rate_water]
     type = PorousFlowMassVolumetricExpansion
-   # fluid_component = 0
     variable = pwater
   []
   [grad_stress_x] 
@@ -184,13 +183,6 @@
     temperature = 313.15
     use_displaced_mesh = false
   []
-    [biot_modulus]
-    type = PorousFlowConstantBiotModulus
-    biot_coefficient = 1
-    solid_bulk_compliance = 4.545e-7
-    fluid_bulk_modulus = 2.27e14
-    use_displaced_mesh = false
-  []
   [saturation_calculator]
     type = PorousFlow1PhaseP
     porepressure = pwater
@@ -223,7 +215,7 @@
     rad_xy = 0.785398
     rad_yz = 0.785398
   #  jf = 1
-    n = "0 0 1"
+    n = "1 0 0"
 
    # type = PorousFlowPermeabilityKozenyCarman
    # poroperm_function = kozeny_carman_phi0
@@ -272,7 +264,7 @@
     type = DirichletBC
     variable = disp_x
     value = 0
-    boundary = 'left'       
+    boundary = 'inlet'       
   []
   [u_fix_top_y]
     type = DirichletBC
@@ -290,21 +282,21 @@
  #   type = DirichletBC
  #   variable = disp_x
  #   value = 0
- #   boundary = 'right'       
+ #   boundary = 'outlet'       
  # []
    [pressure_right_x]
     type = DirichletBC
-    boundary = 'right'              
+    boundary = 'outlet'              
     variable = pwater
-    value = 1e5
+     value =  1e5  
     use_displaced_mesh = false 
   []
   [flux_left]
     type = PorousFlowSink
-    boundary = 'left'
+    boundary = 'inlet'
     variable = pwater
     fluid_phase = 0
-    flux_function = 1e-10    
+    flux_function = 1e-10   
     use_displaced_mesh = false
   []
 []

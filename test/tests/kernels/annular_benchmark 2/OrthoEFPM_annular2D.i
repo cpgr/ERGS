@@ -1,6 +1,6 @@
-# HM single-phase injection of water through an annular model 
-# containing orthotropics embedded fractures (from: Numerical BenchMark 2, 
-# Zill et. al.(2021): Hydro-mechanical continuum modelling of fluid percolation through rock.)
+# HM single-phase injection of water into an annular model (representing fluid injection
+# from a borehole into salt media) containing orthotropics embedded fractures (from: Numerical 
+# BenchMark 2: Zill et. al.(2021): Hydro-mechanical continuum modelling of fluid percolation through rock.)
     
 
 [Mesh]
@@ -179,14 +179,7 @@
     temperature = 313.15
     use_displaced_mesh = false
   []
-    [biot_modulus]
-    type = PorousFlowConstantBiotModulus
-    biot_coefficient = 1
-    solid_bulk_compliance = 4.545e-7
-    fluid_bulk_modulus = 2.27e14
-    use_displaced_mesh = false
-  []
-  [saturation_calculator]
+  [saturation]
     type = PorousFlow1PhaseP
     porepressure = pwater
     capillary_pressure = pc
