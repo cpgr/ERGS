@@ -5,7 +5,7 @@ registerMooseObject("PorousFlowApp", PorousFlowOrthotropicEmbeddedFracturePermea
 InputParameters
 PorousFlowOrthotropicEmbeddedFracturePermeability::validParams()
 {
-  InputParameters params = PorousFlowPermeabilityBase::validParams();
+  InputParameters params = PorousFlowEmbeddedFracturePermeabilityBase::validParams();
   params.addClassDescription(
     " This permeability material calculates the permeability tensor based on attributes of the "
     " Orthotropic Embedded Fractures in Zill et. al.(2021): Hydro-mechanical continuum modelling of "
@@ -19,12 +19,13 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::validParams()
     " normal vector direction. K_m is the matrix/intrinsic permeability. I_{ij} is the identity tensor"
     " and M_{ij} is a structure tensor given as n_i⊗n_i. n_i is a vector normal to each fracture plane.");
 
-    params.addRequiredParam<std::vector<double>>("a", "Mean fracture distance value in all 3 directions");
-    params.addRequiredParam<std::vector<double>>("e0", "threshold strain");
+    params.addRequiredParam<std::vector<double>>("alpha", "Mean fracture distance value in all 3 directions");
+    params.addRequiredParam<std::vector<double>>("eps0", "threshold strain");
     params.addRequiredParam<Real>("km", "matrix/intrinsic permeability");
     params.addParam<Real>("rad_xy", 0, "fracture rotation angle in radians");
     params.addParam<Real>("rad_yz", 0, "fracture rotation angle in radians");
-    params.addParam<RealTensorValue>("n",
+    params.addParam<Real>("jf",1, "jacobian_factor");
+    params.addParam<RealTensorValue>("N",
                            "normal vector wrt to fracture surface");
     params.addParam<std::string>("base_name",
                              "Optional parameter that allows the user to define "
@@ -38,11 +39,11 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::validParams()
 
 PorousFlowOrthotropicEmbeddedFracturePermeability::PorousFlowOrthotropicEmbeddedFracturePermeability(
     const InputParameters & parameters)
-  : PorousFlowPermeabilityBase(parameters),
-    _a(getParam<std::vector<double>>("a")),
-    _e0(getParam<std::vector<double>>("e0")),
+  : PorousFlowEmbeddedFracturePermeabilityBase(parameters),
+    _alpha(getParam<std::vector<double>>("alpha")),
+    _eps(getParam<std::vector<double>>("eps0")),
     _km(getParam<Real>("km")),
-    _nVec(parameters.isParamValid("n")
+    _NVec(parameters.isParamValid("N")
                   ? getParam<RealTensorValue>("n")
                   : RealTensorValue(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)),
     _identity_two(RankTwoTensor::initIdentity),
@@ -51,11 +52,16 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::PorousFlowOrthotropicEmbedded
     _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
     _rad_xy(getParam<Real>("rad_xy")),
     _rad_yz(getParam<Real>("rad_yz")),
+    _jf(getParam<Real>("jf")),
     _strain(getMaterialProperty<RankTwoTensor>("total_strain"))
 {
+  // A call to include the derivatives/jacobian in the computation.
+  // gave me a "segmentation fault" when set to true
+   _dictator.usePermDerivs(false);
+
 for (int j = 0; j < 3; j++)
  {
-  if (_a[j] = 0.0)
+  if (_alpha[j] = 0.0)
     mooseError("PorousFlowOrthotropicEmbeddedFracturePermeability: Mean fracture distance value"
     "in any of the 3 directions has to be greater than 0.");
  }
@@ -72,7 +78,7 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
 
    if (_n_const)
        {
-          RealTensorValue _n =_nVec;
+          RealTensorValue _n =_NVec;
        }
  // Eigenvectors were derived from the total stress obtained from the tensor mech. action.
  // Then, the eigenvector in each column, corresponding to the direction of each principal
@@ -123,8 +129,12 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
  // Now, the tensor containing the fracture normal vectors is rotated using the magnitudes of rotation
     RankTwoTensor n_r = rotMat_xy * rotMat_yz * _n;
 
- // Finally, the permeability is computed by first initializing it.
+ // Finally, the permeability and its Jacobian are computed by first initializing them.
    _permeability_qp[_qp] = _km*I;
+
+   _dpermeability_qp_dvar[_qp].resize(_num_var, RealTensorValue());
+   for (unsigned int v = 0; v < _num_var; ++v)
+    _dpermeability_qp_dvar[_qp][v] = 0.0 * I;
 
  // Note that each column of the n_r tensor corresponds to the rotated fracture normal vector in
  // each principal stress direction. The final/total permeability is the summation over each permeability
@@ -136,21 +146,24 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
    Real e_n = (_strain[_qp] * n_r.column(i))*(n_r.column(i));
 
   // The heaviside function (H_de) that implements the macaulay-bracket in Zill et al.
-   Real H_de = (e_n > _e0[i]) ? 1.0 : 0.0;
+   Real H_de = (e_n > _eps[i]) ? 1.0 : 0.0;
 
   // initial fracture aperture is sqrt(12 * k_m) in the literature
    Real _b0 = std::sqrt(12. * _km);
 
   // change in fracture aperture
-   Real b_f = _b0 + (H_de * _a[i] * (e_n - _e0[i]));
+   Real b_f = _b0 + (H_de * _alpha[i] * (e_n - _eps[i]));
 
-   Real coeff = H_de * (b_f / _a[i]) * ((b_f * b_f / 12.0) - _km);
+   Real coeff = H_de * (b_f / _alpha[i]) * ((b_f * b_f / 12.0) - _km);
 
    RankTwoTensor I = _identity_two;
    auto _M = RankTwoTensor::selfOuterProduct(n_r.column(i));
 
    _permeability_qp[_qp] += coeff * (I - _M);
+
+   _dpermeability_qp_dvar[_qp].resize(_num_var, RealTensorValue());
+   for (unsigned int v = 0; v < _num_var; ++v)
+    _dpermeability_qp_dvar[_qp][v] += _jf * H_de * ((b_f * b_f / 4.0 ) - _km) * (I -_M)*_M;
  }
 
- // This permeability material model does not include its derivatives (jacobian)
 }
