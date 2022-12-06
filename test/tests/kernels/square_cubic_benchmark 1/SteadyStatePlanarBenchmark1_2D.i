@@ -12,7 +12,7 @@
 [GlobalParams]
  displacements = 'disp_x disp_y'
   gravity = '0 0 0'
-  biot_coefficient = 0.0
+  biot_coefficient = 1.0
   PorousFlowDictator = dictator
 []
 
@@ -34,7 +34,7 @@
 
 [Variables]
   [pwater]
-    initial_condition = 1e5  
+    initial_condition = 1.01325e5 
   []
   [disp_x]
     scaling = 1E-5
@@ -46,6 +46,10 @@
 
 
 [AuxVariables]
+  [effective_fluid_pressure]
+    family = MONOMIAL
+    order = CONSTANT
+  []
   [stress_xx]
     family = MONOMIAL
     order = CONSTANT
@@ -65,6 +69,12 @@
 []
 
 [AuxKernels]
+  [effective_fluid_pressure]
+    type = ParsedAux
+    args = 'pwater'
+    function = 'pwater'
+    variable = effective_fluid_pressure
+  []
   [stress_xx]
     type = RankTwoScalarAux
     variable = stress_xx
@@ -178,25 +188,18 @@
     solid_bulk = 8E9 # unimportant since biot = 1
   []
     [permeability]
-    type = PorousFlowEmbeddedFracturePermeability
+    type = PorousFlowEmbeddedFracturePermeabilityBase
     a =  0.01
     e0 = 1e-5
     km = 1e-20
     rad_xy = 0.785398
     rad_yz = 0.785398
     jf = 1
-    n = "0 1 0"
-
-  #  type = PorousFlowPermeabilityKozenyCarman
-  #  poroperm_function = kozeny_carman_phi0
-  #  phi0 = 0.1
-  #  n = 2
-  #  m = 2
-  #  k0 = 1E-12
+    n = "1 0 0"
   []
   [relperm_water]
     type = PorousFlowRelativePermeabilityCorey
-    n = 0.0 #4.0
+    n = 4.0
     s_res = 0.1
     sum_s_res = 0.2
     phase = 0
@@ -251,8 +254,8 @@
   [u_fix_right_x]
     type = DirichletBC
     variable = disp_x
-    value = 0
-    boundary = 'outlet'       
+    boundary = 'outlet' 
+    value = 0      
   []
    [pressure_right_x]
     type = DirichletBC
@@ -266,12 +269,49 @@
     boundary = 'inlet'
     variable = pwater
     fluid_phase = 0
-    flux_function = 1e-10  
+    flux_function = 10e-10  
     use_relperm = true
     use_displaced_mesh = false
   []
+    [pressure_left]
+    type = Pressure
+    boundary = 'inlet'
+    variable = disp_x
+    component = 0
+    postprocessor = constrained_effective_fluid_pressure_at_wellbore
+    use_displaced_mesh = false
+  []
+#[./left]
+#  type = NeumannBC
+#  variable = disp_x
+#  boundary = inlet
+#  value = 10e-10
+#[../]
 []
 
+[Postprocessors]
+  [effective_fluid_pressure_at_wellbore]
+    type = PointValue
+    variable = effective_fluid_pressure
+    point = '1 0 0'
+    execute_on = timestep_begin
+    use_displaced_mesh = false
+  []
+  [constrained_effective_fluid_pressure_at_wellbore]
+    type = FunctionValuePostprocessor
+    function = constrain_effective_fluid_pressure
+    execute_on = timestep_begin
+ []
+[]
+
+[Functions]
+  [constrain_effective_fluid_pressure]
+    type = ParsedFunction
+    vars = effective_fluid_pressure_at_wellbore
+    vals = effective_fluid_pressure_at_wellbore
+    value = 'max(effective_fluid_pressure_at_wellbore, 1.01325e5)'
+  []
+[]
 
 [Preconditioning]
   active = basic
@@ -291,12 +331,12 @@
 []
 
 [Executioner]
-  type = Transient
+  type = Steady
   solve_type = Newton
-  end_time = 1E0 #1E6
+  end_time = 1 #1E6
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 1E5  #1E4
+    dt = 1E1  # 1E3 1E4
     growth_factor = 1.2
     optimal_iterations = 10
   []

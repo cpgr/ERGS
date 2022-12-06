@@ -1,26 +1,35 @@
-# HM single-phase injection of water into an annular model (representing fluid injection
-# from a borehole into salt media) containing orthotropics embedded fractures (from: Numerical 
-# BenchMark 2: Zill et. al.(2021): Hydro-mechanical continuum modelling of fluid percolation through rock.)
-    
+# HM single-phase injection of water through a simple cubic model 
+# containing orthotropic/planar embedded fractures (from: Numerical BenchMark 1, 
+# Zill et. al.(2021): Hydro-mechanical continuum modelling of fluid percolation through rock.)
 
 [Mesh]
-  [efm]
-   type = FileMeshGenerator
-   file = annular.inp
-  []
+    type = FileMesh
+    file = cube.inp
+  #type = GeneratedMesh
+  #dim = 3
+  #nx = 10
+  #ny = 10
+  #nz = 10
+  #xmin = 0
+  #xmax = 1
+  #ymin = 0
+  #ymax = 1
+  #zmin = 0
+  #zmax = 1
 []
 
 [GlobalParams]
-  displacements = 'disp_x disp_y'
+ displacements = 'disp_x disp_y disp_z'
   gravity = '0 0 0'
   biot_coefficient = 1.0
   PorousFlowDictator = dictator
 []
 
+
 [UserObjects]
   [dictator]
     type = PorousFlowDictator
-    porous_flow_vars = 'pwater disp_x disp_y'
+    porous_flow_vars = 'pwater disp_x disp_y disp_z'
     number_fluid_phases = 1
     number_fluid_components = 1
   []
@@ -29,11 +38,12 @@
     alpha = 1E-6
     m = 0.6
   []
-[]
+[] 
+
 
 [Variables]
   [pwater]
-    initial_condition = 1.01325e5       
+   initial_condition = 1.01e5     #atm
   []
   [disp_x]
     scaling = 1E-5
@@ -41,7 +51,11 @@
   [disp_y]
     scaling = 1E-5
   []
+    [disp_z]
+    scaling = 1E-5
+  []
 []
+
 
 [AuxVariables]
   [swater]
@@ -96,6 +110,15 @@
     point2 = '0 0 1'
     execute_on = timestep_end
   []
+  [stress_zz]
+    type = RankTwoAux
+    variable = stress_zz
+    rank_two_tensor = stress
+ #   scalar_type = MaxPrincipal
+    index_i = 2
+    index_j = 2
+    execute_on = timestep_end
+  []
   [porosity]
     type = PorousFlowPropertyAux
     variable = porosity
@@ -110,47 +133,58 @@
   []
 []
 
+
 [Kernels]
   [mass_water_dot]
     type = PorousFlowMassTimeDerivative
-    fluid_component = 0
+    coupling_type = HydroMechanical  
     variable = pwater
   []
   [flux_water]
     type = PorousFlowAdvectiveFlux
-    fluid_component = 0
     coupling_type = HydroMechanical
     use_displaced_mesh = false
     variable = pwater
   []
   [vol_strain_rate_water]
     type = PorousFlowMassVolumetricExpansion
-    fluid_component = 0
     variable = pwater
   []
   [grad_stress_x] 
     type = StressDivergenceTensors 
     variable = disp_x
-    component = 0
     use_displaced_mesh = false
+    component = 0
   []
   [poro_x]
     type = PorousFlowEffectiveStressCoupling
     variable = disp_x
-    component = 0
     use_displaced_mesh = false
+    component = 0
   []
   [grad_stress_y]
     type = StressDivergenceTensors
     variable = disp_y
-    component = 1
     use_displaced_mesh = false
+    component = 1
   []
   [poro_y]
     type = PorousFlowEffectiveStressCoupling
     variable = disp_y
-    component = 1
     use_displaced_mesh = false
+    component = 1
+  []
+    [grad_stress_z]
+    type = StressDivergenceTensors
+    variable = disp_z
+    use_displaced_mesh = false
+    component = 2
+  []
+  [poro_z]
+    type = PorousFlowEffectiveStressCoupling
+    variable = disp_z
+    use_displaced_mesh = false
+    component = 2
   []
 []
 
@@ -203,25 +237,25 @@
     thermal_expansion_coeff = 15E-6 # volumetric
     solid_bulk = 8E9 # unimportant since biot = 1
   []
-    [permeability]
-    type = PorousFlowOrthotropicEmbeddedFracturePermeabilityJB
-    a =  "1e-4 2e-4 3e-4"
-    e0 = "10e-5 5e-5 1e-5" 
-    km = 1e-18
+    [permeability]  
+    type = PorousFlowOrthotropicEmbeddedFracturePermeability
+    alpha =  "1e-4 2e-4 3e-4"
+    eps0 = "10e-5 5e-5 1e-5" 
+    km = 1e-19
     rad_xy = 0.785398
     rad_yz = 0.785398
-    n = "1 0 0  0 1 0 0 0 1"
-   jf = 1
+    N = "1 0 0  0 1 0  0 0 1"
+    jf = 1
 
-   # type = PorousFlowEmbeddedFracturePermeability
-   # a =  10
-   # e0 = 10
-   # km = 1e-19
-   # rad_xy = 0 #.785398
-   # rad_yz = 0 #.785398
-   # jf = 1
-   # n = "0 0 1"
-  
+    #type = PorousFlowEmbeddedFracturePermeabilityBase
+    #a =  10
+    #e0 = 10
+    #km = 1e-19
+    #rad_xy = 0.785398
+    #rad_yz = 0.785398
+    #jf = 1
+    #n = "0 0 1"
+
    # type = PorousFlowPermeabilityKozenyCarman
    # poroperm_function = kozeny_carman_phi0
    # phi0 = 0.1
@@ -239,8 +273,8 @@
 
   [elasticity_tensor]
     type = ComputeIsotropicElasticityTensor
-    youngs_modulus = 5E9
-    poissons_ratio = 0.0
+    youngs_modulus = 1E9
+    poissons_ratio = 0.3
   []
   [strain]
     type = ComputeSmallStrain
@@ -263,70 +297,72 @@
   []
 []
 
-
 [BCs]
-  [fix_u_x]
+  [u_fixed_left_x]
     type = DirichletBC
     variable = disp_x
     value = 0
-    boundary = 'left'        
+    boundary = 'inlet'        
   []
-  [fix_u_y]
+  [u_fixed_left_y]
     type = DirichletBC
     variable = disp_y
     value = 0
-    boundary = 'bottom'         
+    boundary = 'inlet'        
   []
-    [outerBoundary_compressive_stress_x]
-    type = Pressure
-    boundary = outer_boundary
-    factor = 1e5
-    variable = disp_x
-    use_displaced_mesh = false
-  []
-    [outerBoundary_compressive_stress_y]
-    type = Pressure
-    boundary = outer_boundary
-    factor = 1e5
-    variable = disp_y
-    use_displaced_mesh = false
-  []
-    [outerBoundary_Pressure]
+  [u_fixed_right_x]
     type = DirichletBC
-    boundary = outer_boundary
+   variable = disp_x
+   value = 0
+    boundary = 'outlet'      
+  []
+  [u_fixed_right_y]
+    type = DirichletBC
+    variable = disp_y
+    value = 0
+    boundary = 'outlet'        
+  []
+   [u_fix_top_z]
+    type = DirichletBC
+    variable = disp_z
+    value = 1e-4   
+    boundary = 'top'        
+  []
+   [u_fix_bottom_z]
+    type = DirichletBC
+    variable = disp_z
+    value = 0
+    boundary = 'bottom'        
+  []
+    [pressure_right_x]
+    type = DirichletBC
+    boundary = 'outlet'              
     variable = pwater
     value = 1e5
-    use_displaced_mesh = false
+    use_displaced_mesh = false 
   []
-  [cavity_compressive_stress_x]
-    type = Pressure
-    boundary = injection_area
-    variable = disp_x
-    factor = 1e6
-    use_displaced_mesh = false
-  []
-  [cavity_compressive_stress_y]
-    type = Pressure
-    boundary = injection_area
-    variable = disp_y
-    factor = 1e6
-    use_displaced_mesh = false
-  []
-    [cavity_Pressure]
-    type = DirichletBC
-    boundary = injection_area
+     [flux_left]
+    type = PorousFlowSink
+    boundary = 'inlet'
     variable = pwater
-    value = 1e6
+    fluid_phase = 0
+    flux_function = 1e-10     
     use_displaced_mesh = false
   []
- # [constant_water_injection]
- #   type = PorousFlowSink
- #   boundary = injection_area
- #   variable = pwater
- #   fluid_phase = 0
- #   flux_function = 1
- #   use_displaced_mesh = false
- # []
+[]
+
+
+[Postprocessors]
+    [permeability]
+    type = PointValue
+    point = '1 1 1'
+    variable = permeability
+  []
+    [pwater]
+    type = PointValue
+    point = '1 1 1'
+    variable = pwater
+  []
 []
 
 
@@ -347,6 +383,7 @@
   []
 []
 
+
 [Executioner]
   type = Transient
   solve_type = Newton
@@ -357,8 +394,9 @@
     growth_factor = 1.2
     optimal_iterations = 10
   []
-  nl_abs_tol = 1e-7 #1E-7
+  nl_abs_tol = 1E-1
 []
+
 
 [Outputs]
   exodus = true
@@ -367,12 +405,3 @@
   execute_on = 'initial timestep_end'
   []
 []
-
-
-
-
-
-
-
-
-

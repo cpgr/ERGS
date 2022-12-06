@@ -6,14 +6,14 @@
   [efmcube]
     type = FileMeshGenerator
     file = square.inp
-#  type = GeneratedMeshGenerator
-#  dim = 2
-#  nx = 10
-#  ny = 10
-#  xmin = 0
-# xmax = 1
-#  ymin = 0
-#  ymax = 1
+ # type = GeneratedMeshGenerator
+ # dim = 2
+ # nx = 10
+ # ny = 10
+ # xmin = 0
+ #  xmax = 1
+ #  ymin = 0
+ #  ymax = 1
   []
 []
 
@@ -43,7 +43,7 @@
 
 [Variables]
   [pwater]
-    initial_condition = 1e5       #atm
+    initial_condition = 1.01325e5      #atm
   []
   [disp_x]
     scaling = 1E-5
@@ -208,21 +208,21 @@
     solid_bulk = 8E9 # unimportant since biot = 1
   []
     [permeability]
-    type = PorousFlowEmbeddedFracturePermeability
+    type = PorousFlowEmbeddedFracturePermeabilityBase
     a =  10
     e0 = 10
     km = 1e-19
-    rad_xy = 0.785398
-    rad_yz = 0.785398
-  #  jf = 1
-    n = "1 0 0"
+    rad_xy = 45 #0.785398
+    rad_yz = 45 #0.785398
+    jf = 1
+   n = "1 0 0"
 
-   # type = PorousFlowPermeabilityKozenyCarman
-   # poroperm_function = kozeny_carman_phi0
-   # phi0 = 0.1
-   # n = 2
-   # m = 2
-   # k0 = 1E-12
+    # type = PorousFlowPermeabilityKozenyCarman
+    # poroperm_function = kozeny_carman_phi0
+    # phi0 = 0.1
+    # n = 2
+    # m = 2
+    # k0 = 1E-12
   []
   [relperm_water]
     type = PorousFlowRelativePermeabilityCorey
@@ -234,8 +234,8 @@
 
   [elasticity_tensor]
     type = ComputeIsotropicElasticityTensor
-    youngs_modulus = 5E9
-    poissons_ratio = 0.0
+    youngs_modulus = 1E9
+    poissons_ratio = 0.3
   []
   [strain]
     type = ComputeSmallStrain
@@ -269,7 +269,7 @@
   [u_fix_top_y]
     type = DirichletBC
     variable = disp_y
-    value = 0
+    value = 1e-4
     boundary = 'top'         
   []
   [u_fix_bottom_y]
@@ -278,12 +278,12 @@
    value = 0
     boundary = 'bottom'      
   []
- # [u_fix_right_x]
- #   type = DirichletBC
- #   variable = disp_x
- #   value = 0
- #   boundary = 'outlet'       
- # []
+  [u_fix_right_x]
+    type = DirichletBC
+    variable = disp_x
+    value = 0
+    boundary = 'outlet'       
+  []
    [pressure_right_x]
     type = DirichletBC
     boundary = 'outlet'              
@@ -296,7 +296,7 @@
     boundary = 'inlet'
     variable = pwater
     fluid_phase = 0
-    flux_function = 1e-10   
+    flux_function = 10e-10   
     use_displaced_mesh = false
   []
 []
@@ -322,14 +322,14 @@
 [Executioner]
   type = Transient
   solve_type = Newton
-  end_time = 1E6 #1E6
+  end_time = 1E3 #1E6
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 1E5  #1E4
+    dt = 1E3  #1E4
     growth_factor = 1.2
     optimal_iterations = 10
   []
-  nl_abs_tol = 1E-7
+  nl_abs_tol = 1E-1
 []
 
 [Outputs]
