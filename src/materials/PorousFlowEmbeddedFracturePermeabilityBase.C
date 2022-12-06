@@ -57,7 +57,7 @@ PorousFlowEmbeddedFracturePermeabilityBase::PorousFlowEmbeddedFracturePermeabili
     _strain(getMaterialProperty<RankTwoTensor>("total_strain"))
 {
   // A call to include the derivatives/jacobian in the computation.
-  // gave me a "segmentation fault" when set to true
+  // Gave 'segmentation fault' when set to  true
      _dictator.usePermDerivs(false);
 }
 
@@ -66,7 +66,7 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
 {
 // This code block describes how the 'normal vector' (n) wrt the fracture face should
 // be computed. if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx),
-// then it should be obtain from the input file. Otherwise, n is computed as the
+// then it should be specify and obtain from the input file. Otherwise, n is computed as the
 // direction (eigenvector) of the third principal stress vector.
 
    if (_n_const)
@@ -82,44 +82,39 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
       _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
       RealVectorValue _n = eigvec.column(2);
 
-  // To rotatate the fracture normal vector around the Z-axis (X-Y plane) during random
-  // rotation of the material,the Z-unit axis is rotated first. Hence rotating the material
-  // by a magnitude. Then the magnitude of rotation is multiplied by the fracture normal
-  // vector. (See Zill et al. for why material is randomly rotated)
+  // The fracture normal vector (n) is rotated around the Z-axis (i.e., X-Y plane) during random
+  // rotation of the material using the correct rotation matrix (rotMat_xy and angle rad_xy).
+  // (See Zill et al. for why material is randomly rotated)
 
-    RealVectorValue UnitZ(0.0, 0.0, 1.0);
-    RankTwoTensor _transformation_matrix;
+    RankTwoTensor rotMat_xy;
 
-    _transformation_matrix(0, 0) = std::cos(_rad_xy);
-    _transformation_matrix(0, 1) = std::sin(_rad_xy);
-    _transformation_matrix(0, 2) = 0;
-    _transformation_matrix(1, 0) = -std::sin(_rad_xy);
-    _transformation_matrix(1, 1) = std::cos(_rad_xy);
-    _transformation_matrix(1, 2) = 0;
-    _transformation_matrix(2, 0) = 0;
-    _transformation_matrix(2, 1) = 0;
-    _transformation_matrix(2, 2) = 1;
+    rotMat_xy(0, 0) = std::cos(_rad_xy);
+    rotMat_xy(0, 1) = std::sin(_rad_xy);
+    rotMat_xy(0, 2) = 0;
+    rotMat_xy(1, 0) = -std::sin(_rad_xy);
+    rotMat_xy(1, 1) = std::cos(_rad_xy);
+    rotMat_xy(1, 2) = 0;
+    rotMat_xy(2, 0) = 0;
+    rotMat_xy(2, 1) = 0;
+    rotMat_xy(2, 2) = 1;
 
-    RealVectorValue rotMat_xy = _transformation_matrix * UnitZ;
+// Similarly, the fracture normal is rotated around the X-axis (i.e., Y-Z plane) during random
+// rotation of the material using the correct rotation matrix (rotMat_yz and angle rad_xy).
 
-// Similarly, the magnitude of rotation is necessary to rotate the fracture normal vector
-// around  the X-axis (Y-Z plane)
+     RankTwoTensor rotMat_yz;
 
-    RealVectorValue UnitX(1.0, 0.0, 0.0);
+     rotMat_yz(0, 0) = 1;
+     rotMat_yz(0, 1) = 0;
+     rotMat_yz(0, 2) = 0;
+     rotMat_yz(1, 0) = 0;
+     rotMat_yz(1, 1) = std::cos(_rad_yz);
+     rotMat_yz(1, 2) = std::sin(_rad_yz);
+     rotMat_yz(2, 0) = 0;
+     rotMat_yz(2, 1) = -std::sin(_rad_yz);
+     rotMat_yz(2, 2) = std::cos(_rad_yz);
 
-    _transformation_matrix(0, 0) = 1;
-    _transformation_matrix(0, 1) = 0;
-    _transformation_matrix(0, 2) = 0;
-    _transformation_matrix(1, 0) = 0;
-    _transformation_matrix(1, 1) = std::cos(_rad_yz);
-    _transformation_matrix(1, 2) = std::sin(_rad_yz);
-    _transformation_matrix(2, 0) = 0;
-    _transformation_matrix(2, 1) = -std::sin(_rad_yz);
-    _transformation_matrix(2, 2) = std::cos(_rad_yz);
 
-    RealVectorValue rotMat_yz = _transformation_matrix * UnitX;
-
-  // Finally, the fracture normal vector is rotated using the magnitudes of rotation
+ // Rotation of the  fracture normal vector using the rotation matrices
     RealVectorValue n_r = rotMat_xy * rotMat_yz * _n;
 
   // strain in the normal fracture direction
