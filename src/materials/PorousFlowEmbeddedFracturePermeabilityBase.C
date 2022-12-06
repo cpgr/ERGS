@@ -87,11 +87,10 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
   // (See Zill et al. for why material is randomly rotated)
 
     RankTwoTensor rotMat_xy;
-
     rotMat_xy(0, 0) = std::cos(_rad_xy);
-    rotMat_xy(0, 1) = std::sin(_rad_xy);
+    rotMat_xy(0, 1) = -std::sin(_rad_xy);
     rotMat_xy(0, 2) = 0;
-    rotMat_xy(1, 0) = -std::sin(_rad_xy);
+    rotMat_xy(1, 0) = std::sin(_rad_xy);
     rotMat_xy(1, 1) = std::cos(_rad_xy);
     rotMat_xy(1, 2) = 0;
     rotMat_xy(2, 0) = 0;
@@ -102,15 +101,14 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
 // rotation of the material using the correct rotation matrix (rotMat_yz and angle rad_xy).
 
      RankTwoTensor rotMat_yz;
-
      rotMat_yz(0, 0) = 1;
      rotMat_yz(0, 1) = 0;
      rotMat_yz(0, 2) = 0;
      rotMat_yz(1, 0) = 0;
      rotMat_yz(1, 1) = std::cos(_rad_yz);
-     rotMat_yz(1, 2) = std::sin(_rad_yz);
+     rotMat_yz(1, 2) = -std::sin(_rad_yz);
      rotMat_yz(2, 0) = 0;
-     rotMat_yz(2, 1) = -std::sin(_rad_yz);
+     rotMat_yz(2, 1) = std::sin(_rad_yz);
      rotMat_yz(2, 2) = std::cos(_rad_yz);
 
 
