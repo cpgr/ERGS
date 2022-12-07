@@ -55,11 +55,11 @@ PorousFlowEmbeddedFracturePermeabilityBase::PorousFlowEmbeddedFracturePermeabili
     _rad_yz(getParam<Real>("rad_yz")),
     _jf(getParam<Real>("jf")),
     _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
-    _en(_nodal_material ? declareProperty<Real>("PorousFlow_strain_normal_nodal")
-                                  : declareProperty<Real>("PorousFlow_strain_normal_qp")),
+    _en(_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
+                                  : declareProperty<Real>("fracture_normal_strain_qp")),
     _en_old(_nodal_material
-                          ? getMaterialPropertyOld<Real>("PorousFlow_strain_normal_nodal")
-                          : getMaterialPropertyOld<Real>("PorousFlow_strain_normal_qp"))
+                          ? getMaterialPropertyOld<Real>("fracture_normal_strain_nodal")
+                          : getMaterialPropertyOld<Real>("fracture_normal_strain_qp"))
 {
   // A call to include the derivatives/jacobian in the computation.
   // Gave 'segmentation fault' when set to  true
