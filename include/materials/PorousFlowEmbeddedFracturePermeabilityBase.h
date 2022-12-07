@@ -33,6 +33,7 @@ public:
     using Material::_q_point;
 
 protected:
+	virtual void initQpStatefulProperties() override;
 	void computeQpProperties() override;
 
 	/// optional parameter that allows multiple mechanics materials to be defined
@@ -77,4 +78,10 @@ protected:
 
     // Jacobian factor
 	 const Real _jf;
+
+   // Computed strain in the fracture normal vector direction as a material property
+	 MaterialProperty<Real>& _en;
+
+	/// Old value of strain in the fracture normal vector direction
+	 const MaterialProperty<Real>& _en_old;
 };
