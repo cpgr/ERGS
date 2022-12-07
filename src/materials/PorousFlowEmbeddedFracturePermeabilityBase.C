@@ -54,11 +54,22 @@ PorousFlowEmbeddedFracturePermeabilityBase::PorousFlowEmbeddedFracturePermeabili
     _rad_xy(getParam<Real>("rad_xy")),
     _rad_yz(getParam<Real>("rad_yz")),
     _jf(getParam<Real>("jf")),
-    _strain(getMaterialProperty<RankTwoTensor>("total_strain"))
+    _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
+    _en(_nodal_material ? declareProperty<Real>("PorousFlow_strain_normal_nodal")
+                                  : declareProperty<Real>("PorousFlow_strain_normal_qp")),
+    _en_old(_nodal_material
+                          ? getMaterialPropertyOld<Real>("PorousFlow_strain_normal_nodal")
+                          : getMaterialPropertyOld<Real>("PorousFlow_strain_normal_qp"))
 {
   // A call to include the derivatives/jacobian in the computation.
   // Gave 'segmentation fault' when set to  true
      _dictator.usePermDerivs(false);
+}
+
+void
+PorousFlowEmbeddedFracturePermeabilityBase::initQpStatefulProperties()
+{
+  _en[_qp] = 0.0;
 }
 
 void
@@ -113,21 +124,21 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
 
 
  // Rotation of the  fracture normal vector using the rotation matrices
-    RealVectorValue n_r = rotMat_xy * rotMat_yz * _n;
+     RealVectorValue n_r = rotMat_xy * rotMat_yz * _n;
 
   // strain in the normal fracture direction
-   Real e_n = (_strain[_qp] * n_r)*(n_r);
+      _en[_qp] = _en_old[_qp] + (_strain[_qp] * n_r)*(n_r);
 
   // H_de is the heaviside function that implements the macaulay-bracket in Zill et al.
   // since _e0 is the initial/threshold strain state of the material, and strain is always
   // increasing in n-direction, e_n should always be bigger than e_0. otherwise, H_de = 0
-     Real H_de = (e_n > _e0) ? 1.0 : 0.0;
+     Real H_de = (_en[_qp] > _e0) ? 1.0 : 0.0;
 
   // initial fracture aperture is sqrt(12 * k_m) in the literature
      Real _b0 = std::sqrt(12. * _km);
 
   // change in fracture aperture
-     Real b_f = _b0 + (H_de * _a * (e_n - _e0));
+     Real b_f = _b0 + (H_de * _a * (_en[_qp] - _e0));
 
      Real coeff = H_de * (b_f / _a) * ((b_f * b_f / 12.0) - _km);
 
