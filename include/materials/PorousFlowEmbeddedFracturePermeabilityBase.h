@@ -72,14 +72,14 @@ protected:
   /// get the strain tensor (actually, this is the creep strain)
   const MaterialProperty<RankTwoTensor> & _strain;
 
-    // fracture rotation angles about xy and yz (in radians)
+    /// fracture rotation angles about xy and yz (in radians)
   	 const Real _rad_xy;
   	 const Real _rad_yz;
 
-    // Jacobian factor
+    /// Jacobian factor
 	 const Real _jf;
 
-   // Computed strain in the fracture normal vector direction as a material property
+    /// Computed strain in the fracture normal vector direction as a material property
 	 MaterialProperty<Real>& _en;
 
 	/// Old value of strain in the fracture normal vector direction
