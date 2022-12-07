@@ -53,7 +53,12 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::PorousFlowOrthotropicEmbedded
     _rad_xy(getParam<Real>("rad_xy")),
     _rad_yz(getParam<Real>("rad_yz")),
     _jf(getParam<Real>("jf")),
-    _strain(getMaterialProperty<RankTwoTensor>("total_strain"))
+    _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
+    _en(_nodal_material ? declareProperty<Real>("PorousFlow_strain_normal_nodal")
+                                  : declareProperty<Real>("PorousFlow_strain_normal_qp")),
+    _en_old(_nodal_material
+                          ? getMaterialPropertyOld<Real>("PorousFlow_strain_normal_nodal")
+                          : getMaterialPropertyOld<Real>("PorousFlow_strain_normal_qp"))
 {
   // A call to include the derivatives/jacobian in the computation.
   // (Unused: Gave 'segmentation fault' when set to  true)
@@ -65,6 +70,12 @@ for (int j = 0; j < 3; j++)
     mooseError("PorousFlowOrthotropicEmbeddedFracturePermeability: Mean fracture distance value"
     "in any of the 3 directions has to be greater than 0.");
  }
+}
+
+void
+PorousFlowOrthotropicEmbeddedFracturePermeability::initQpStatefulProperties()
+{
+  _en[_qp] = 0.0;
 }
 
 void
@@ -134,16 +145,16 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
    auto n_r = rotMat_xy * rotMat_yz * _n.column(i);
 
   // strain due to each fracture normal vector direction
-   Real e_n = (_strain[_qp] * n_r)*(n_r);
+    _en[_qp] = _en_old[_qp] + (_strain[_qp] * n_r)*(n_r);
 
   // The heaviside function (H_de) that implements the macaulay-bracket in Zill et al.
-   Real H_de = (e_n > _eps[i]) ? 1.0 : 0.0;
+   Real H_de = (_en[_qp] > _eps[i]) ? 1.0 : 0.0;
 
   // initial fracture aperture is sqrt(12 * k_m) in the literature
    Real _b0 = std::sqrt(12. * _km);
 
   // change in fracture aperture
-   Real b_f = _b0 + (H_de * _alpha[i] * (e_n - _eps[i]));
+   Real b_f = _b0 + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
 
    Real coeff = H_de * (b_f / _alpha[i]) * ((b_f * b_f / 12.0) - _km);
 
