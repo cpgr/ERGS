@@ -72,11 +72,11 @@ protected:
   const MaterialProperty<RankTwoTensor> & _strain;
 
     /// fracture rotation angles about xy and yz (in radians)
-  	 const Real _rad_xy;
-  	 const Real _rad_yz;
+   const Real _rad_xy;
+   const Real _rad_yz;
 
     /// Jacobian factor
-	 const Real _jf;
+	const Real _jf;
 
     /// Computed strain in the fracture normal vector direction as a material property
 	 MaterialProperty<Real>& _en;
