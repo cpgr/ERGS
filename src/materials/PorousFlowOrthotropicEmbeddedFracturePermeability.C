@@ -55,27 +55,14 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::PorousFlowOrthotropicEmbedded
     _jf(getParam<Real>("jf")),
     _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
     _en(_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
-                                  : declareProperty<Real>("fracture_normal_strain_qp")),
-    _en_old(_nodal_material
-                          ? getMaterialPropertyOld<Real>("fracture_normal_strain_nodal")
-                          : getMaterialPropertyOld<Real>("fracture_normal_strain_qp"))
+                                  : declareProperty<Real>("fracture_normal_strain_qp"))
 {
-  // A call to include the derivatives/jacobian in the computation.
-  // (Unused: Gave 'segmentation fault' when set to  true)
-   _dictator.usePermDerivs(false);
-
 for (int j = 0; j < 3; j++)
  {
   if (_alpha[j] = 0.0)
     mooseError("PorousFlowOrthotropicEmbeddedFracturePermeability: Mean fracture distance value"
     "in any of the 3 directions has to be greater than 0.");
  }
-}
-
-void
-PorousFlowOrthotropicEmbeddedFracturePermeability::initQpStatefulProperties()
-{
-  _en[_qp] = 0.0;
 }
 
 void
@@ -87,18 +74,21 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
 // direction (eigenvector) of the all the three principal stresses. The assumption here is
 // that the three fracture planes lie within the principal stresses.
 
-   if (_n_const)
-       {
-          RankTwoTensor _n =_NVec;
-       }
- // Eigenvectors were derived from the total stress obtained from the tensor mech. action.
- // Then, the eigenvector in each column, corresponding to the direction of each principal
- // stress vector was computed.
-
-      RankTwoTensor eigvec;
-      std::vector<Real> eigvals;
-      _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
-      RankTwoTensor _n = eigvec;
+    if (_n_const)
+      {
+        RankTwoTensor _n =_NVec;
+      }
+    else
+    // Eigenvectors were derived from the total stress obtained from the tensor mech. action.
+    // Then, the eigenvector in each column, corresponding to the direction of each principal
+    // stress vector was computed.
+      {
+        RankTwoTensor eigvec;
+        std::vector<Real> eigvals;
+        _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
+        RankTwoTensor _n = eigvec;
+      }
+      RankTwoTensor _n;
 
   // The fracture normal vectors captured in the Tensor (_n) are rotated around both Z-axis
   // (i.e., X-Y plane) and X-axis (i.e., Y-Z plane) during random rotation of the material using
@@ -140,12 +130,12 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
  // refers to each principal stress direction.
 
  for (int i = 0; i < 2; i++)
- {
+  {
   // rotate each fracture normal vector captured in the _n tensor
    auto n_r = rotMat_xy * rotMat_yz * _n.column(i);
 
   // strain due to each fracture normal vector direction
-    _en[_qp] = _en_old[_qp] + (_strain[_qp] * n_r)*(n_r);
+    _en[_qp] = (_strain[_qp] * n_r)*(n_r);
 
   // The heaviside function (H_de) that implements the macaulay-bracket in Zill et al.
    Real H_de = (_en[_qp] > _eps[i]) ? 1.0 : 0.0;
@@ -163,10 +153,5 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
    RealTensorValue _M = RankTwoTensor::selfOuterProduct(n_r);
 
    _permeability_qp[_qp] += coeff * (I - _M);
-
-   _dpermeability_qp_dvar[_qp].resize(_num_var, RealTensorValue());
-   for (unsigned int v = 0; v < _num_var; ++v)
-    _dpermeability_qp_dvar[_qp][v] += _jf * H_de * ((b_f * b_f / 4.0 ) - _km) * (I -_M)*_M;
  }
-
 }
