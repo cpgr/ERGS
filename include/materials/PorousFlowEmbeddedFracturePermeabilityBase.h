@@ -41,6 +41,9 @@ protected:
 	/// mean fracture distance
 	const Real _a;
 
+	/// Initial fracture aperture
+	const Real _b0;
+
 	/// Threshold strain
 	const Real _e0;
 
