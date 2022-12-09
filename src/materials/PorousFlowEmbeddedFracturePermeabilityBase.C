@@ -22,6 +22,7 @@ PorousFlowEmbeddedFracturePermeabilityBase::validParams()
                                       "a > 0",
                                       "Mean (scalar) fracture distance value");
     params.addParam<Real>("e0", 1,"threshold strain");
+    params.addParam<Real>("b0", 1,"Initial fracture aperture");
     params.addParam<Real>("km", 1, "matrix/intrinsic permeability");
     params.addParam<Real>("rad_xy", 0, "fracture rotation angle in radians");
     params.addParam<Real>("rad_yz", 0, "fracture rotation angle in radians");
@@ -42,6 +43,7 @@ PorousFlowEmbeddedFracturePermeabilityBase::PorousFlowEmbeddedFracturePermeabili
     const InputParameters & parameters)
   : PorousFlowPermeabilityBase(parameters),
     _a(getParam<Real>("a")),
+    _b0(getParam<Real>("b0")),
     _e0(getParam<Real>("e0")),
     _km(getParam<Real>("km")),
     _nVec(parameters.isParamValid("n")
@@ -56,7 +58,7 @@ PorousFlowEmbeddedFracturePermeabilityBase::PorousFlowEmbeddedFracturePermeabili
     _jf(getParam<Real>("jf")),
     _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
     _en(_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
-                                  : declareProperty<Real>("fracture_normal_strain_qp"))
+                              : declareProperty<Real>("fracture_normal_strain_qp"))
 {
 }
 
@@ -66,11 +68,13 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
 // This code block describes how the 'normal vector' (n) wrt the fracture face should
 // be computed. if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx),
 // then it should be specify and obtain from the input file. Otherwise, n is computed as the
-// direction (eigenvector) of the third principal stress vector.
+// direction (eigenvector) of the principal stress vector corresponding to the normal direction.
 
-    if (_n_const)
-      {
-        RealVectorValue _n =_nVec;
+     RealVectorValue _n;
+
+      if (_n_const)
+     {
+         _n =_nVec;
       }
         else
           // Eigenvectors were derived from the total stress obtained from the tensor mech. action.
@@ -80,9 +84,9 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
         RankTwoTensor eigvec;
         std::vector<Real> eigvals;
         _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
-        RealVectorValue _n = eigvec.column(2);
+         _n = eigvec.column(2);
       }
-      RealVectorValue _n;
+
 
   // The fracture normal vector (n) is rotated around the Z-axis (i.e., X-Y plane) during random
   // rotation of the material using the correct rotation matrix (rotMat_xy and angle rad_xy).
@@ -118,7 +122,8 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
      RealVectorValue n_r = rotMat_xy * rotMat_yz * _n;
 
   // strain in the normal fracture direction
-      _en[_qp] = (_strain[_qp] * n_r)*(n_r);
+     _en[_qp] = (_strain[_qp] * n_r)*(n_r);
+
 
   // H_de is the heaviside function that implements the macaulay-bracket in Zill et al.
   // since _e0 is the initial/threshold strain state of the material, and strain is always
@@ -126,7 +131,7 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
      Real H_de = (_en[_qp] > _e0) ? 1.0 : 0.0;
 
   // initial fracture aperture is sqrt(12 * k_m) in the literature
-     Real _b0 = std::sqrt(12. * _km);
+  //   Real _b0 = std::sqrt(12. * _km);
 
   // change in fracture aperture
      Real b_f = _b0 + (H_de * _a * (_en[_qp] - _e0));

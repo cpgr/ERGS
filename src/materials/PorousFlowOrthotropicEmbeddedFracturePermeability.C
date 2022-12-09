@@ -55,7 +55,7 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::PorousFlowOrthotropicEmbedded
     _jf(getParam<Real>("jf")),
     _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
     _en(_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
-                                  : declareProperty<Real>("fracture_normal_strain_qp"))
+                              : declareProperty<Real>("fracture_normal_strain_qp"))
 {
 for (int j = 0; j < 3; j++)
  {
@@ -74,9 +74,10 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
 // direction (eigenvector) of the all the three principal stresses. The assumption here is
 // that the three fracture planes lie within the principal stresses.
 
+    RankTwoTensor _n;
     if (_n_const)
       {
-        RankTwoTensor _n =_NVec;
+         _n =_NVec;
       }
     else
     // Eigenvectors were derived from the total stress obtained from the tensor mech. action.
@@ -86,9 +87,8 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
         RankTwoTensor eigvec;
         std::vector<Real> eigvals;
         _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
-        RankTwoTensor _n = eigvec;
+         _n = eigvec;
       }
-      RankTwoTensor _n;
 
   // The fracture normal vectors captured in the Tensor (_n) are rotated around both Z-axis
   // (i.e., X-Y plane) and X-axis (i.e., Y-Z plane) during random rotation of the material using
@@ -116,13 +116,9 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
     rotMat_yz(2, 1) = std::sin(_rad_yz);
     rotMat_yz(2, 2) = std::cos(_rad_yz);
 
- // Finally, the permeability and its Jacobian are computed by first initializing them.
+ // Finally, the permeability is computed by first initializing it.
     RankTwoTensor I = _identity_two;
    _permeability_qp[_qp] = _km*I;
-
-   _dpermeability_qp_dvar[_qp].resize(_num_var, RealTensorValue());
-   for (unsigned int v = 0; v < _num_var; ++v)
-    _dpermeability_qp_dvar[_qp][v] = 0.0 * I;
 
  // The final/total permeability is the summation over the permeability due to each
  // individual strain corresponding to its unique rotated fracture normal vector.
