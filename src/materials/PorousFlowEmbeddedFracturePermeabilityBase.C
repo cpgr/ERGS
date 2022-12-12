@@ -120,14 +120,14 @@ PorousFlowEmbeddedFracturePermeabilityBase::computeQpProperties()
  // Rotation of the  fracture normal vector using the rotation matrices
      RealVectorValue n_r = rotMat_xy * rotMat_yz * _n;
 
-
-
   // strain in the normal fracture direction
    _en[_qp] = std::abs(n_r*(_strain[_qp] * n_r));
 
   // H_de is the heaviside function that implements the macaulay-bracket in Zill et al.
   // since _e0 is the initial/threshold strain state of the material, and strain is always
-  // increasing in n-direction, e_n should always be bigger than _e0. otherwise, H_de = 0
+  // increasing in n-direction, _en should always be bigger than _e0. otherwise, change in
+  // fracture aperture = 0
+  
      Real H_de = (_en[_qp] > _e0) ? 1.0 : 0.0;
 
   // initial fracture aperture is sqrt(12 * k_m) in the literature
