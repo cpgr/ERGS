@@ -131,7 +131,7 @@ PorousFlowOrthotropicEmbeddedFracturePermeability::computeQpProperties()
    auto n_r = rotMat_xy * rotMat_yz * _n.column(i);
 
   // strain due to each fracture normal vector direction
-    _en[_qp] = (_strain[_qp] * n_r)*(n_r);
+    _en[_qp] = std::abs(n_r*(_strain[_qp] * n_r));
 
   // The heaviside function (H_de) that implements the macaulay-bracket in Zill et al.
    Real H_de = (_en[_qp] > _eps[i]) ? 1.0 : 0.0;
