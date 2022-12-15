@@ -33,7 +33,7 @@ public:
     using Material::_q_point;
 
 protected:
-	void computeQpProperties() override;
+	void computeQpProperties() ;
 
 	/// optional parameter that allows multiple mechanics materials to be defined
     const std::string _base_name;
@@ -75,8 +75,8 @@ protected:
    const Real _rad_xy;
    const Real _rad_yz;
 
-    /// Jacobian factor
-	 const Real _jf;
+   /// Initial fracture aperture
+   const Real _b0;
 
     /// Computed strain in the fracture normal vector direction as a material property
 	MaterialProperty<Real>& _en;
