@@ -66,10 +66,7 @@ PFEMBase2::validParams()
   return params;
 }
 
-PFEMBase2::PFEMBase2(const InputParameters & parameters,
-                   FEProblemBase & problem,
-                   THREAD_ID tid,
-                   bool is_nodal)
+PFEMBase2::PFEMBase2(const InputParameters & parameters)
   : PorousFlowPermeabilityBase(parameters),
 /*
     _min(getParam<Real>("min")),
@@ -85,11 +82,7 @@ PFEMBase2::PFEMBase2(const InputParameters & parameters,
     _reset_on(EXEC_LINEAR),
 
     problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
-  //  tid(getParam<THREAD_ID>("_tid")),
-  //  _t(_fe_problem.time()),
-  //  _var(_sys.getActualFieldVariable<T>(parameters.get<THREAD_ID>("tid"),
-  //assembly(
-  //  problem.assembly(tid, _var.kind() == Moose::VAR_NONLINEAR ? _var.sys().number() : 0)),
+    tid(getParam<THREAD_ID>("_tid")),
 
     _curr_node(problem.assembly(tid).node()),
     _curr_element(problem.assembly(tid).elem()),
