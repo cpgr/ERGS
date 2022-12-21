@@ -48,8 +48,8 @@ public:
 	void computeQpProperties() override;
 
 	void setRandomResetFrequency(ExecFlagType exec_flag);
-	Real getRandomReal() const;
-	unsigned long getRandomLong() const;
+	Real getRandmFieldReal() const;
+	unsigned long getRandmFieldLong () const;
 	unsigned int getSeed(std::size_t id);
 
 	void setRandomDataPointer(RandomData* random_data);
