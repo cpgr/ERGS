@@ -1,19 +1,24 @@
 #pragma once
 
 #include "PorousFlowPermeabilityBase.h"
+#include "RandomInterface.h"
+
 #include "RankTwoTensor.h"
 #include <Eigen/Geometry>
 #include <RandomInterface.h>
-#include "RandomData.h"
-#include <InitialConditionBase.h>
+#include <FEProblemBase.h>
+#include <Assembly.h>
+#include "ElementIDInterface.h"
 
-// Forward Declarations
+#include "MooseTypes.h"
+#include "MooseEnumItem.h"
+
+// Forward declarations
+class Assembly;
+class FEProblemBase;
 class InputParameters;
-namespace libMesh
-{
-	class Point;
-}
-
+class MooseRandom;
+class RandomData;
 template < typename T>
 InputParameters validParams();
 
@@ -40,11 +45,24 @@ public:
 
 	PFEMBase1(const InputParameters& parameters);
 
-protected:
+	~PFEMBase1();
 
 	void computeQpProperties() override;
-	Real generateRandom();
-	Distribution const* _distribution;
+
+	void setRandomResetFrequency(ExecFlagType exec_flag);
+	Real getRandmFieldReal() const;
+	unsigned long getRandmFieldLong () const;
+	unsigned int getSeed(std::size_t id);
+
+	void setRandomDataPointer(RandomData* random_data);
+
+	unsigned int getMasterSeed() const { return _master_seed; }
+	bool isNodal() const { return _is_nodal; }
+	ExecFlagType getResetOnTime() const { return _reset_on; }
+
+protected:
+
+
 
 	/// optional parameter that allows multiple mechanics materials to be defined
 	const std::string _base_name;
@@ -100,22 +118,26 @@ protected:
 	MaterialProperty<Real>& _en;
 
 	/// Lower and Upper bound of the 'randomly' or the 'uniformly distributed random' generated values
-	const Real _min;
-	const Real _max;
+//	const Real _min;
+//	const Real _max;
 
-	const Node* _current_node;
+	  FEProblemBase & problem;
+	  THREAD_ID tid;
+	  bool is_nodal;
+	  
 
 private:
-	std::unique_ptr<RandomData> _elem_random_data;
-
-	std::unique_ptr<RandomData> _node_random_data;
-    
-	MooseRandom * _elem_random_generator;
-    
-	MooseRandom * _node_random_generator;
+	  RandomData * _random_data;
+	  mutable MooseRandom * _generator;
 	
-	std::map<dof_id_type, Real> _elem_numbers;
+	  FEProblemBase & _ri_problem;
+	  const std::string _ri_name;
 	
-	std::map<dof_id_type, Real> _node_numbers;
+	  unsigned int _master_seed;
+	  bool _is_nodal;
+	  ExecFlagType _reset_on;
+	
+	  const Node* const& _curr_node;
+	  const Elem* const& _curr_element;
 
 };

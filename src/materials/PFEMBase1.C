@@ -1,26 +1,18 @@
 #include "PFEMBase1.h"
+
+#include "Moose.h"
+#include "RandomInterface.h"
+#include "RandomData.h"
 #include "MooseRandom.h"
-#include "Distribution.h"
-#include <RandomInterface.h>
+#include <FEProblemBase.h>
+#include "Assembly.h"
+
+#include "libmesh/fe_interface.h"
+#include "libmesh/quadrature.h"
+
+#include "MooseTypes.h"
 
 registerMooseObject("PorousFlowApp", PFEMBase1);
-
-#include "libmesh/point.h"
-
-namespace
-{
- inline Real
- valueHelper(dof_id_type id, MooseRandom & generator, std::map<dof_id_type, Real> & map)
-  {
-   auto it_pair = map.lower_bound(id);
-
-  // Do we need to generate a new number?
-    if (it_pair == map.end() || it_pair->first != id)
-      it_pair = map.emplace_hint(it_pair, id, generator.rand(id));
-
-  return it_pair->second;
-  }
-}
 
 InputParameters
 PFEMBase1::validParams()
@@ -55,13 +47,18 @@ PFEMBase1::validParams()
     params.addParam<bool>("normal_vector_to_fracture_is_constant",
                       true,
                     "Whether the normal vector wrt to fracture surface is constant/known or not.");
-    params.addParam<unsigned int>("seed", 0, "Seed value for the random number generator");
+
+    params.addParam<unsigned int>("seed", 0, "The seed for the master random number generator");
+    params.addParamNamesToGroup("seed", "Advanced");
+/*
     params.addParam<Real>(
         "min", 0, "Lower bound of randomly or uniformly distributed random generated values");
     params.addParam<Real>(
         "max", 1.57, "Upper bound of randomly or uniformly distributed random generated values");
     params.addParam<DistributionName>(
     "distribution", "Name of distribution defining distribution of randomly generated values");
+*/
+
     params.addParam<bool>("Random_field",
                       true,
                       "Whether to use spatially random angle of rotation at each timestep or a fixed"
@@ -69,12 +66,30 @@ PFEMBase1::validParams()
   return params;
 }
 
-PFEMBase1::PFEMBase1(
-    const InputParameters & parameters)
+PFEMBase1::PFEMBase1(const InputParameters & parameters)
   : PorousFlowPermeabilityBase(parameters),
+/*
     _min(getParam<Real>("min")),
     _max(getParam<Real>("max")),
     _distribution(nullptr),
+*/
+
+    _random_data(nullptr),
+    _generator(nullptr),
+    _ri_problem(problem),
+    _ri_name(parameters.get<std::string>("_object_name")),
+    _master_seed(parameters.get<unsigned int>("seed")),
+    _is_nodal(is_nodal),
+    _reset_on(EXEC_LINEAR),
+
+    problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
+    tid(getParam<THREAD_ID>("_tid")),
+
+    _curr_node(problem.assembly(tid).node()),
+    _curr_element(problem.assembly(tid).elem()),
+
+
+
     _a(getParam<Real>("a")),
     _b0(getParam<Real>("b0")),
     _e0(getParam<Real>("e0")),
@@ -91,28 +106,26 @@ PFEMBase1::PFEMBase1(
     _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
     _en (_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
                               : declareProperty<Real>("fracture_normal_strain_qp")),
-     _elem_random_generator(nullptr),
-     _node_random_generator(nullptr),
-     _current_node(nullptr),
      _Random_field(parameters.get<bool>("Random_field")),
      _randm_rad_xy(_nodal_material ? declareProperty<Real>("random_xy_rotation_angle_for_each_element")
                               : declareProperty<Real>("random_xy_rotation_angle_for_each_element_qp")),
      _randm_rad_yz(_nodal_material ? declareProperty<Real>("random_yz_rotation_angle_for_each_element")
                               : declareProperty<Real>("random_yz_rotation_angle_for_each_element_qp"))
-{
-   unsigned int processor_seed = getParam<unsigned int>("seed");
 
+{
+  /*
+   unsigned int processor_seed = getParam<unsigned int>("seed");
    MooseRandom::seed(processor_seed);
      _elem_random_data =
           std::make_unique<RandomData>(_fe_problem, false, EXEC_INITIAL, MooseRandom::randl());
      _node_random_data =
           std::make_unique<RandomData>(_fe_problem, true, EXEC_INITIAL, MooseRandom::randl());
 
-     _elem_random_generator = &_elem_random_data->getGenerator();
-     _node_random_generator = &_node_random_data->getGenerator();
+//     _elem_random_generator = &_elem_random_data->getGenerator();
+//     _node_random_generator = &_node_random_data->getGenerator();
 
-//     _elem_random_generator = &_elem_random_data->getRandomLong();
-//     _node_random_generator = &_node_random_data->getRandomLong();
+     _elem_random_generator = &_elem_random_data->getRandmFieldLong();
+     _node_random_generator = &_node_random_data->getRandmFieldLong();
 
   if (_min >= _max)
   paramError("min", "Min >= Max for PFEMBase1!");
@@ -123,31 +136,66 @@ PFEMBase1::PFEMBase1(
     if (parameters.isParamSetByUser("min") || parameters.isParamSetByUser("max"))
     paramError("distribution", "Cannot use together with 'min' or 'max' parameter");
   }
+*/
+}
 
+
+
+PFEMBase1::~PFEMBase1() {}
+
+void
+PFEMBase1::setRandomResetFrequency(ExecFlagType exec_flag)
+{
+  _reset_on = exec_flag;
+  _ri_problem.registerRandomInterface(*this, _ri_name);
+}
+
+
+void
+PFEMBase1::setRandomDataPointer(RandomData * random_data)
+{
+  _random_data = random_data;
+  _generator = &_random_data->getGenerator();
+}
+
+unsigned int
+PFEMBase1::getSeed(std::size_t id)
+{
+  mooseAssert(_random_data, "RandomData object is NULL!");
+
+  return _random_data->getSeed(id);
+}
+
+
+unsigned long
+PFEMBase1::getRandmFieldLong() const
+{
+  mooseAssert(_generator, "Random Generator is NULL, did you call setRandomResetFrequency()?");
+
+  dof_id_type id;
+ if (_is_nodal)
+    id = _curr_node->id();
+ else
+    id = _curr_element->id();
+
+  return _generator->randl(id);
 }
 
 
 Real
-PFEMBase1::generateRandom()
+PFEMBase1::getRandmFieldReal() const
 {
-  Real rand_num;
+  mooseAssert(_generator, "Random Generator is NULL, did you call setRandomResetFrequency()?");
 
-    if (_current_node)
-      {
-      rand_num = valueHelper(_current_node->id(), *_node_random_generator, _node_numbers);
-      }
-    else if (_current_elem)
-    {
-      rand_num = valueHelper(_current_elem->id(), *_elem_random_generator, _elem_numbers);
-    }
-    else
-    {
-      mooseError("fail to generate parallel consistent random numbers. Please, check your input "
-                 "parameters or contact the MOOSE team for help");
-      }
+  dof_id_type id;
+  if (_is_nodal)
+    id = _curr_node->id();
+  else
+    id = _curr_element->id();
 
-  return rand_num;
+  return _generator->rand(id);
 }
+
 
 
 void
@@ -181,21 +229,20 @@ PFEMBase1::computeQpProperties()
   // Get the spatially random rotation angle (in radians) for each element at each timestep either
   // from a specific distribution or randomly.
       {
-          if (_distribution)
-        // Get random field from the specified distribution
-          {
-            _randm_rad_xy[_qp] = _distribution->quantile(generateRandom());
-            _randm_rad_yz[_qp] = _distribution->quantile(generateRandom());
-          }
-          else
-         // Get random field between min and max.
-          {
-           _randm_rad_xy[_qp] = generateRandom() * (_max - _min) + _min;
-           _randm_rad_yz[_qp] = generateRandom() * (_max - _min) + _min;
-           }
-
-        _rad_xy = _randm_rad_xy[_qp];//generateRandom() * (_max - _min) + _min;
-        _rad_yz = _randm_rad_yz[_qp]; //generateRandom() * (_max - _min) + _min;
+//          if (_distribution)
+//        // Get random field from the specified distribution
+//          {
+//            _randm_rad_xy[_qp] = _distribution->quantile(generateRandom());
+//            _randm_rad_yz[_qp] = _distribution->quantile(generateRandom());
+//          }
+//          else
+//         // Get random field between min and max.
+//          {
+           _randm_rad_xy[_qp] = getRandmFieldReal();
+           _randm_rad_yz[_qp] = getRandmFieldReal();
+//           }
+        _rad_xy = _randm_rad_xy[_qp];
+        _rad_yz = _randm_rad_yz[_qp];
         }
       else
   // Get the fixed (or user-specified) rotation angle for all elements in the domain at each timestep.
