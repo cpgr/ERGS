@@ -139,5 +139,4 @@ private:
 	
 	  const Node* const& _curr_node;
 	  const Elem* const& _curr_element;
-
 };
