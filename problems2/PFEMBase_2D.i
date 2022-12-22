@@ -439,9 +439,9 @@
   []
 []
 
-[Debug]
-  show_material_props = true
-[]
+#[Debug]
+#  show_material_props = true
+#[]
 
 
 
