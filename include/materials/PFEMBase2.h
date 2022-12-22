@@ -117,5 +117,4 @@ private:
 	std::map<dof_id_type, Real> _elem_numbers;
 	
 	std::map<dof_id_type, Real> _node_numbers;
-
 };
