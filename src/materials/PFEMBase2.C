@@ -1,21 +1,29 @@
 #include "PFEMBase2.h"
-
-#include "Moose.h"
-#include "RandomInterface.h"
-#include "RandomData.h"
 #include "MooseRandom.h"
-#include "FEProblemBase.h"
-#include "Assembly.h"
+#include "Distribution.h"
+#include <RandomInterface.h>
 
-#include "libmesh/fe_interface.h"
-#include "libmesh/quadrature.h"
+registerMooseObject("PorousFlowApp", PFEMBase2 );
 
-#include "MooseTypes.h"
+#include "libmesh/point.h"
 
-registerMooseObject("PorousFlowApp", PFEMBase2);
+namespace
+{
+ inline Real
+ valueHelper(dof_id_type id, MooseRandom & generator, std::map<dof_id_type, Real> & map)
+  {
+   auto it_pair = map.lower_bound(id);
+
+  // Do we need to generate a new number?
+    if (it_pair == map.end() || it_pair->first != id)
+      it_pair = map.emplace_hint(it_pair, id, generator.rand(id));
+
+  return it_pair->second;
+  }
+}
 
 InputParameters
-PFEMBase2::validParams()
+PFEMBase2 ::validParams()
 {
   InputParameters params = PorousFlowPermeabilityBase::validParams();
   params.addClassDescription(
@@ -47,18 +55,13 @@ PFEMBase2::validParams()
     params.addParam<bool>("normal_vector_to_fracture_is_constant",
                       true,
                     "Whether the normal vector wrt to fracture surface is constant/known or not.");
-
-    params.addParam<unsigned int>("seed", 0, "The seed for the master random number generator");
-    params.addParamNamesToGroup("seed", "Advanced");
-/*
+    params.addParam<unsigned int>("seed", 0, "Seed value for the random number generator");
     params.addParam<Real>(
         "min", 0, "Lower bound of randomly or uniformly distributed random generated values");
     params.addParam<Real>(
         "max", 1.57, "Upper bound of randomly or uniformly distributed random generated values");
     params.addParam<DistributionName>(
     "distribution", "Name of distribution defining distribution of randomly generated values");
-*/
-
     params.addParam<bool>("Random_field",
                       true,
                       "Whether to use spatially random angle of rotation at each timestep or a fixed"
@@ -66,28 +69,12 @@ PFEMBase2::validParams()
   return params;
 }
 
-PFEMBase2::PFEMBase2(const InputParameters & parameters)
+PFEMBase2 ::PFEMBase2 (
+    const InputParameters & parameters)
   : PorousFlowPermeabilityBase(parameters),
-/*
     _min(getParam<Real>("min")),
     _max(getParam<Real>("max")),
     _distribution(nullptr),
-*/
-    _random_data(nullptr),
-    _generator(nullptr),
-    _ri_problem(problem),
-    _ri_name(parameters.get<std::string>("_object_name")),
-    _master_seed(parameters.get<unsigned int>("seed")),
-    _is_nodal(is_nodal),
-    _reset_on(EXEC_LINEAR),
-
-    problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
-    tid(getParam<THREAD_ID>("_tid")),
-
-    _curr_node(problem.assembly(tid).node()),
-    _curr_element(problem.assembly(tid).elem()),
-
-
     _a(getParam<Real>("a")),
     _b0(getParam<Real>("b0")),
     _e0(getParam<Real>("e0")),
@@ -104,36 +91,28 @@ PFEMBase2::PFEMBase2(const InputParameters & parameters)
     _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
     _en (_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
                               : declareProperty<Real>("fracture_normal_strain_qp")),
-
-/*
      _elem_random_generator(nullptr),
      _node_random_generator(nullptr),
      _current_node(nullptr),
-*/
-
      _Random_field(parameters.get<bool>("Random_field")),
      _randm_rad_xy(_nodal_material ? declareProperty<Real>("random_xy_rotation_angle_for_each_element")
                               : declareProperty<Real>("random_xy_rotation_angle_for_each_element_qp")),
      _randm_rad_yz(_nodal_material ? declareProperty<Real>("random_yz_rotation_angle_for_each_element")
                               : declareProperty<Real>("random_yz_rotation_angle_for_each_element_qp"))
-
 {
-  /*
    unsigned int processor_seed = getParam<unsigned int>("seed");
+
    MooseRandom::seed(processor_seed);
      _elem_random_data =
           std::make_unique<RandomData>(_fe_problem, false, EXEC_INITIAL, MooseRandom::randl());
      _node_random_data =
           std::make_unique<RandomData>(_fe_problem, true, EXEC_INITIAL, MooseRandom::randl());
 
-//     _elem_random_generator = &_elem_random_data->getGenerator();
-//     _node_random_generator = &_node_random_data->getGenerator();
-
-     _elem_random_generator = &_elem_random_data->getRandmFieldLong();
-     _node_random_generator = &_node_random_data->getRandmFieldLong();
+     _elem_random_generator = &_elem_random_data->getGenerator();
+     _node_random_generator = &_node_random_data->getGenerator();
 
   if (_min >= _max)
-  paramError("min", "Min >= Max for PFEMBase2!");
+  paramError("min", "Min >= Max for PFEMBase2 !");
 
   if (parameters.isParamSetByUser("distribution"))
   {
@@ -141,72 +120,12 @@ PFEMBase2::PFEMBase2(const InputParameters & parameters)
     if (parameters.isParamSetByUser("min") || parameters.isParamSetByUser("max"))
     paramError("distribution", "Cannot use together with 'min' or 'max' parameter");
   }
-*/
-}
 
-
-
-PFEMBase2::~PFEMBase2() {}
-
-void
-PFEMBase2::setRandomResetFrequency(ExecFlagType exec_flag)
-{
-  _reset_on = exec_flag;
-  _ri_problem.registerRandomInterface(*this, _ri_name);
-}
-
-
-void
-PFEMBase2::setRandomDataPointer(RandomData * random_data)
-{
-  _random_data = random_data;
-  _generator = &_random_data->getGenerator();
-}
-
-unsigned int
-PFEMBase2::getSeed(std::size_t id)
-{
-  mooseAssert(_random_data, "RandomData object is NULL!");
-
-  return _random_data->getSeed(id);
-}
-
-
-unsigned long
-PFEMBase2::getRandmFieldLong() const
-{
-  mooseAssert(_generator, "Random Generator is NULL, did you call setRandomResetFrequency()?");
-
-  dof_id_type id;
- if (_is_nodal)
-    id = _curr_node->id();
- else
-    id = _curr_element->id();
-
-  return _generator->randl(id);
 }
 
 
 Real
-PFEMBase2::getRandmFieldReal() const
-{
-  mooseAssert(_generator, "Random Generator is NULL, did you call setRandomResetFrequency()?");
-
-  dof_id_type id;
-  if (_is_nodal)
-    id = _curr_node->id();
-  else
-    id = _curr_element->id();
-
-  return _generator->rand(id);
-}
-
-
-
-
-/*
-Real
-PFEMBase2::generateRandom()
+PFEMBase2 ::generateRandom()
 {
   Real rand_num;
 
@@ -226,11 +145,10 @@ PFEMBase2::generateRandom()
 
   return rand_num;
 }
-*/
 
 
 void
-PFEMBase2::computeQpProperties()
+PFEMBase2 ::computeQpProperties()
 {
 // This code block describes how the 'normal vector' (n) wrt the fracture face should
 // be computed. if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx),
@@ -260,20 +178,21 @@ PFEMBase2::computeQpProperties()
   // Get the spatially random rotation angle (in radians) for each element at each timestep either
   // from a specific distribution or randomly.
       {
-//          if (_distribution)
-//        // Get random field from the specified distribution
-//          {
-//            _randm_rad_xy[_qp] = _distribution->quantile(generateRandom());
-//            _randm_rad_yz[_qp] = _distribution->quantile(generateRandom());
-//          }
-//          else
-//         // Get random field between min and max.
-//          {
-           _randm_rad_xy[_qp] = getRandmFieldReal();
-           _randm_rad_yz[_qp] = getRandmFieldReal();
-//           }
-        _rad_xy = _randm_rad_xy[_qp];
-        _rad_yz = _randm_rad_yz[_qp];
+          if (_distribution)
+        // Get random field from the specified distribution
+          {
+            _randm_rad_xy[_qp] = _distribution->quantile(generateRandom());
+            _randm_rad_yz[_qp] = _distribution->quantile(generateRandom());
+          }
+          else
+         // Get random field between min and max.
+          {
+           _randm_rad_xy[_qp] = generateRandom() * (_max - _min) + _min;
+           _randm_rad_yz[_qp] = generateRandom() * (_max - _min) + _min;
+           }
+
+        _rad_xy = _randm_rad_xy[_qp];//generateRandom() * (_max - _min) + _min;
+        _rad_yz = _randm_rad_yz[_qp]; //generateRandom() * (_max - _min) + _min;
         }
       else
   // Get the fixed (or user-specified) rotation angle for all elements in the domain at each timestep.
