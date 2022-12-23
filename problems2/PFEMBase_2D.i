@@ -112,6 +112,10 @@
     family = MONOMIAL
     order = CONSTANT
   []
+    [randm_rad_XY]
+    family = MONOMIAL
+    order = CONSTANT
+  []
 []
 
 [AuxKernels]
@@ -205,6 +209,12 @@
     type = PorousFlowPropertyAux
     variable = density
     property = density
+    execute_on = timestep_end
+  []
+   [randm_rad_XY]
+    type = MaterialRealAux
+    variable = randm_rad_XY
+    property = random_xy_rotation_angle_for_each_element_qp
     execute_on = timestep_end
   []
 []
