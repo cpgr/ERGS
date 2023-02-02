@@ -8,25 +8,18 @@ registerMooseObject("PorousFlowApp", PorousFlowWaterAir);
 InputParameters
 PorousFlowWaterAir::validParams()
 {
-  InputParameters params = PorousFlowFluidStateMultiComponentBase::validParams();
-  params.addRequiredParam<UserObjectName>("water_fp", "The name of the user object for water");
-  params.addRequiredParam<UserObjectName>(
-      "gas_fp", "The name of the user object for the air (i.e., ideal gas)");
+  InputParameters params = PorousFlowWaterNCG::validParams();
   params.addParam<Real>("R", 8314.56,"Universal Gas Constant");
   params.addClassDescription("Fluid state class for water and air (Ideal gas),"
                               "with vapor pressure lowering capability");
   return params;
 }
 
+
 PorousFlowWaterAir::PorousFlowWaterAir(const InputParameters & parameters)
-  : PorousFlowFluidStateMultiComponentBase(parameters),
-    _water_fp(getUserObject<SinglePhaseFluidProperties>("water_fp")),
-    _water97_fp(getUserObject<Water97FluidProperties>("water_fp")),
+  : PorousFlowWaterNCG(parameters),
     _air_fp(getUserObject<SinglePhaseFluidProperties>("gas_fp")),
-    _Mh2o(_water_fp.molarMass()),
     _Mair(_air_fp.molarMass()),
-    _water_triple_temperature(_water_fp.triplePointTemperature()),
-    _water_critical_temperature(_water_fp.criticalTemperature()),
     _air_henry(_air_fp.henryCoefficients()),
     _R(getParam<Real>("R"))
 
@@ -61,6 +54,7 @@ PorousFlowWaterAir::fluidStateName() const
 {
   return "water-air";
 }
+
 
 void
 PorousFlowWaterAir::thermophysicalProperties(Real pressure,
@@ -128,7 +122,7 @@ PorousFlowWaterAir::thermophysicalProperties(Real pressure,
 
   // Vapor pressure (with lowering capability)
   DualReal numer = _Mh2o *_pc.capillaryPressure(liquid.saturation, qp) * liquid.saturation;
-  DualReal deno  = liquid.density * _R * (T + 273.15);
+  DualReal deno  = liquid.density * _R * T;
   DualReal f_vpl = std::exp(numer/deno);
   DualReal pv = f_vpl * psat;
 
