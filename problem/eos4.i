@@ -3,7 +3,7 @@
 [Mesh]
   [efmcube]
   type = FileMeshGenerator
-  file = eos4.msh
+  file = eos3.msh
   []
 []
 
@@ -21,15 +21,14 @@
 [UserObjects]
   [dictator]
     type = PorousFlowDictator
-    porous_flow_vars = 'pgas z temperature'
+    porous_flow_vars = 'pgas sgas temperature'
     number_fluid_phases = 2
     number_fluid_components = 2
   []
   [pc]
     type = PorousFlowCapillaryPressureVG
     m = 0.45
-    alpha = 1e1
-    pc_max = 1e4
+    alpha = 1e1 
   []
   [fs]
     type = PorousFlowWaterAir
@@ -50,7 +49,7 @@
   [pgas]
     initial_condition = 1.0E5
   []
-  [z]
+  [sgas]
     initial_condition = 0.2
   []
   [temperature]
@@ -60,13 +59,9 @@
 
 
 [AuxVariables]
-  [sgas]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [sLiquid]
-    family = MONOMIAL
-    order = CONSTANT
+  [swater]
+   order = CONSTANT
+   family = MONOMIAL
   []
   [xAir]
    order = CONSTANT
@@ -80,17 +75,11 @@
 
 
 [AuxKernels]
-  [sgas]
-    type = PorousFlowPropertyAux
-    property = saturation
-    phase = 1
-    variable = sgas
-  []
-  [sLiquid]
+  [swater]
     type = PorousFlowPropertyAux
     property = saturation
     phase = 0
-    variable = sLiquid
+    variable = swater
   []
   [xAir]
     type = PorousFlowPropertyAux
@@ -115,10 +104,11 @@
   []
 []
 
+
 [Kernels]
   [mass0]
     type = PorousFlowMassTimeDerivative
-   variable = pgas
+    variable = pgas
     fluid_component = 0
   []
   [adv0]
@@ -128,29 +118,29 @@
   []
    [disp0]
     type = PorousFlowDispersiveFlux
+    variable = pgas
     disp_trans = '0 0'
     disp_long = '0 0'
     fluid_component = 0
     use_displaced_mesh = false
-    variable = pgas
   []
   [mass1]
     type = PorousFlowMassTimeDerivative
-    variable = z
+    variable = sgas
     fluid_component = 1
   []
   [adv1]
     type = PorousFlowAdvectiveFlux
-    variable = z
+    variable = sgas
     fluid_component = 1
   []
    [disp1]
     type = PorousFlowDispersiveFlux
+    variable = sgas
     disp_trans = '0 0'
     disp_long = '0 0'
     fluid_component = 1
     use_displaced_mesh = false
-    variable = z
   []
   [energy]
     type = PorousFlowEnergyTimeDerivative
@@ -180,7 +170,7 @@
   [WaterAirProperties]
     type = PorousFlowFluidState
     gas_porepressure = pgas
-    z = z
+    z = sgas
     temperature = temperature
     capillary_pressure = pc
     fluid_state = fs
@@ -223,10 +213,10 @@
 [VectorPostprocessors]
   [variables]
     type = LineValueSampler
-    variable = 'Z xAir pgas temperature sLiquid'
+    variable = 'xAir pgas temperature swater'
     sort_by = id
     start_point = '0 0 0'
-    end_point = '100 0 0'
+    end_point = '1000 0 0'
     num_points = 100
     execute_on = 'timestep_end'
   []
@@ -237,7 +227,7 @@
   [Z]
     type = PointValue
     point = '1 0 0'
-    variable = temperature
+    variable = Z
   []
   [xAir]
     type = PointValue
@@ -254,10 +244,10 @@
     point = '1 0 0'
     variable = temperature
   []
-  [SLiquid]
+  [swater]
     type = PointValue
     point =  '1 0 0'
-    variable = sLiquid
+    variable = swater
   []
 []
 
