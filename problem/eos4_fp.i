@@ -26,12 +26,12 @@
     number_fluid_components = 2
   []
   [pc]
- #   type = PorousFlowCapillaryPressureVG
- #   m = 0.45
- #   alpha = 1e1
- #   pc_max = 1e4
-    type = PorousFlowCapillaryPressureConst
-    pc = 0
+    type = PorousFlowCapillaryPressureVG
+    m = 0.45
+    alpha = 1e1
+    pc_max = 1e4
+ #   type = PorousFlowCapillaryPressureConst
+ #   pc = 0
   []
 []
 
@@ -64,19 +64,19 @@
     family = MONOMIAL
     order = CONSTANT
   []
- # [xAir]
- #  order = CONSTANT
- #   family = MONOMIAL
- # []
- # [yWater]
- #  order = CONSTANT
- #   family = MONOMIAL
- # []
-  [massfrac_ph0_sp0]
-    initial_condition = 1 # all H20 in phase=0
+#  [xAir]
+#   order = CONSTANT
+#    family = MONOMIAL
+#  []
+#  [yWater]
+#   order = CONSTANT
+#    family = MONOMIAL
+#  []
+  [xAir]
+    initial_condition = 1 
   []
-  [massfrac_ph1_sp0]
-    initial_condition = 0 # no H2O in phase=1
+   [yAir]
+    initial_condition = 0 
   []
   [Z]
     order = FIRST
@@ -179,10 +179,20 @@
     type = PorousFlowHeatConduction
     variable = temperature
   []  
+#  [heat_source]
+#    type = HeatSource
+#    variable = temperature
+#    value = 3e3
+#  []
+[]
+
+
+[DiracKernels]
   [heat_source]
-    type = HeatSource
+    type = PorousFlowSquarePulsePointSource
+    point = '0 0 0'
+    mass_flux = 3e3
     variable = temperature
-    value = 3e3
   []
 []
 
@@ -200,8 +210,8 @@
   []
   [massfrac]
     type = PorousFlowMassFraction
- #   mass_fraction_vars = 'yWater xAir'
-    mass_fraction_vars = 'massfrac_ph0_sp0 massfrac_ph1_sp0'
+     mass_fraction_vars = 'xAir yAir'
+   #  mass_fraction_vars = 'xAir yWater'
   []
   [water]
     type = PorousFlowSingleComponentFluid
@@ -267,11 +277,11 @@
     point = '1 0 0'
     variable = Z
   []
- # [xAir]
- #   type = PointValue
- #   point =  '1 0 0'
- #   variable = xAir
- # []
+#  [xAir]
+#    type = PointValue
+#    point =  '1 0 0'
+#    variable = xAir
+#  []
  # [yWater]
  #   type = PointValue
  #   point =  '1 0 0'
@@ -306,10 +316,12 @@
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  dt = 1
-  end_time = 10
+  dt = 100
+  num_steps = 1000
+  end_time = 3650
   nl_abs_tol = 1e-12
 []
+
 
 [Outputs]
   exodus = true
