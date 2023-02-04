@@ -21,7 +21,7 @@
 [UserObjects]
   [dictator]
     type = PorousFlowDictator
-    porous_flow_vars = 'pgas sgas temperature'
+    porous_flow_vars = 'pgas zi temperature'
     number_fluid_phases = 2
     number_fluid_components = 2
   []
@@ -49,7 +49,7 @@
   [pgas]
     initial_condition = 1.0E5
   []
-  [sgas]
+  [zi]
     initial_condition = 0.2
   []
   [temperature]
@@ -59,6 +59,9 @@
 
 
 [AuxVariables]
+  [sgas]
+    initial_condition = 0.2
+  []
   [swater]
    order = CONSTANT
    family = MONOMIAL
@@ -100,7 +103,7 @@
 [Functions]
   [sol_variable]
    type = ParsedFunction 
-   value = (x/sqrt(t))
+   value = (x/sqrt(t))           #log of this value gives NAN
   []
 []
 
@@ -126,17 +129,17 @@
   []
   [mass1]
     type = PorousFlowMassTimeDerivative
-    variable = sgas
+    variable = zi
     fluid_component = 1
   []
   [adv1]
     type = PorousFlowAdvectiveFlux
-    variable = sgas
+    variable = zi
     fluid_component = 1
   []
    [disp1]
     type = PorousFlowDispersiveFlux
-    variable = sgas
+    variable = zi
     disp_trans = '0 0'
     disp_long = '0 0'
     fluid_component = 1
@@ -154,10 +157,20 @@
     type = PorousFlowHeatConduction
     variable = temperature
   []  
+#  [heat_source]
+#    type = HeatSource
+#    variable = temperature
+#    value = 3e3
+#  []
+[]
+
+
+[DiracKernels]
   [heat_source]
-    type = HeatSource
+    type = PorousFlowSquarePulsePointSource
+    point = '0 0 0'
+    mass_flux = 3e3
     variable = temperature
-    value = 3e3
   []
 []
 
@@ -170,7 +183,7 @@
   [WaterAirProperties]
     type = PorousFlowFluidState
     gas_porepressure = pgas
-    z = sgas
+    z = zi
     temperature = temperature
     capillary_pressure = pc
     fluid_state = fs
@@ -200,7 +213,7 @@
   [] 
   [diffusivity]
     type = PorousFlowDiffusivityConst
-    diffusion_coeff = '2.13E-5 0 2.13E-5 0'
+    diffusion_coeff = '0 2.13E-5  0  2.13E-5'
     tortuosity = '0.25 0.25'
   []
   [rock_thermal_conductivity]
@@ -217,7 +230,7 @@
     sort_by = id
     start_point = '0 0 0'
     end_point = '1000 0 0'
-    num_points = 100
+    num_points = 10
     execute_on = 'timestep_end'
   []
 []
@@ -263,8 +276,9 @@
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  dt = 1
-  end_time = 10
+  dt = 100
+  num_steps = 1000
+  end_time = 3650
   nl_abs_tol = 1e-12
 []
 
