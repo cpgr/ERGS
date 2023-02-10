@@ -1,10 +1,17 @@
 #TOUGH2 EOS3/4 example
 
 [Mesh]
-  [efmcube]
-  type = FileMeshGenerator
-  file = eos3.msh
-  []
+ # [efmcube]
+ # type = FileMeshGenerator
+ # file = eos3.msh
+ # []
+  type = GeneratedMesh
+  dim = 1
+  nx = 500
+  xmax = 100 #1000
+  ny = 1
+  ymax = 4.5
+  bias_x = 1.01
 []
 
 
@@ -50,7 +57,7 @@
     initial_condition = 1.0E5
   []
   [zi]
-    initial_condition = 0.2
+    initial_condition = 0.20  #0.14
   []
   [temperature]
     initial_condition = 291.15
@@ -60,7 +67,8 @@
 
 [AuxVariables]
   [sgas]
-    initial_condition = 0.2
+   order = CONSTANT
+   family = MONOMIAL
   []
   [swater]
    order = CONSTANT
@@ -70,14 +78,16 @@
    order = CONSTANT
     family = MONOMIAL
   []
-  [Z]
-    order = FIRST
-    family = LAGRANGE
-  []
 []
 
 
 [AuxKernels]
+  [sgas]
+    type = PorousFlowPropertyAux
+    property = saturation
+    phase = 1
+    variable = sgas
+  []
   [swater]
     type = PorousFlowPropertyAux
     property = saturation
@@ -91,19 +101,6 @@
     phase = 0
     fluid_component = 1
     execute_on = timestep_end
-  []
- [Z]
-    type = FunctionAux
-    variable = Z
-    function = sol_variable
- []
-[]
-
-
-[Functions]
-  [sol_variable]
-   type = ParsedFunction 
-   value = (x/sqrt(t))           #log of this value gives NAN
   []
 []
 
@@ -156,21 +153,6 @@
   [conduction]
     type = PorousFlowHeatConduction
     variable = temperature
-  []  
-#  [heat_source]
-#    type = HeatSource
-#    variable = temperature
-#    value = 3e3
-#  []
-[]
-
-
-[DiracKernels]
-  [heat_source]
-    type = PorousFlowSquarePulsePointSource
-    point = '0 0 0'
-    mass_flux = 3e3
-    variable = temperature
   []
 []
 
@@ -195,11 +177,15 @@
   [relperm0]
     type = PorousFlowRelativePermeabilityVG
     m = 0.45
+    s_res = 9.6e-4
+    sum_s_res = 9.6e-4
     phase = 0
   []
   [relperm1]
-    type = PorousFlowRelativePermeabilityVG
-    m = 0.45
+    type = PorousFlowRelativePermeabilityCorey
+    n = 2
+    s_res = 0.05
+    sum_s_res = 0.35
     phase = 1
   []
   [porosity]
@@ -213,7 +199,7 @@
   [] 
   [diffusivity]
     type = PorousFlowDiffusivityConst
-    diffusion_coeff = '0 2.13E-5  0  2.13E-5'
+    diffusion_coeff = '0 2.13E-5 0 2.13E-5'
     tortuosity = '0.25 0.25'
   []
   [rock_thermal_conductivity]
@@ -223,25 +209,47 @@
 []
 
 
+[BCs]
+#  [flux]
+#    type = PorousFlowPiecewiseLinearSink
+#    variable = temperature
+#    boundary = left
+#    pt_vals = '0 1 2'
+#    multipliers = '-1 0 1'
+#    flux_function = -3e3
+#  []
+  [flux]
+    type = PorousFlowSink
+    boundary = 'left'
+    variable = temperature
+    use_mobility = false
+    use_relperm = false
+    mass_fraction_component = 1
+    fluid_phase = 0
+    flux_function = -3e3
+  []
+[]
+
+
 [VectorPostprocessors]
-  [variables]
-    type = LineValueSampler
-    variable = 'xAir pgas temperature swater'
+  [vars]
+    type = NodalValueSampler
     sort_by = id
-    start_point = '0 0 0'
-    end_point = '1000 0 0'
-    num_points = 10
+    variable = 'pgas temperature'
     execute_on = 'timestep_end'
+    outputs = spatial
+  []
+  [auxvars]
+    type = ElementValueSampler
+    sort_by = id
+    variable = 'xAir  swater'
+    execute_on = 'timestep_end'
+    outputs = spatial
   []
 []
 
 
 [Postprocessors]
-  [Z]
-    type = PointValue
-    point = '1 0 0'
-    variable = Z
-  []
   [xAir]
     type = PointValue
     point =  '1 0 0'
@@ -276,17 +284,28 @@
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  dt = 100
-  num_steps = 1000
-  end_time = 3650
-  nl_abs_tol = 1e-12
+  dt = 1e4
+  num_steps = 1e6
+  end_time = 3.56E8
+  nl_abs_tol = 1e-20
+  nl_max_its = 25
+  l_max_its = 100
+  dtmax = 5e6
+  [TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 10
+  []
 []
 
 [Outputs]
   exodus = true
-  [csv]
-  type = CSV
-  execute_on = 'initial timestep_end'
+  sync_times = '1e5 2.592e6 3.64e7 3e8'
+  [time]
+    type = CSV
+  []
+  [spatial]
+    type = CSV
+    sync_only = true
   []
 []
 
