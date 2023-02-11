@@ -54,9 +54,6 @@
   [pgas]
     initial_condition = 1E5
   []
-  [zi]
-    initial_condition = 0.20 #0.14 
-  []
   [temperature]
     initial_condition = 291.15 
   []
@@ -64,6 +61,9 @@
 
 
 [AuxVariables]
+  [zi]
+    initial_condition = 0.20 #0.14 
+  []
   [sgas]
    order = CONSTANT
    family = MONOMIAL
@@ -122,24 +122,24 @@
     fluid_component = 0
     use_displaced_mesh = false
   []
-  [mass1]
-    type = PorousFlowMassTimeDerivative
-    variable = zi
-    fluid_component = 1
-  []
-  [adv1]
-    type = PorousFlowAdvectiveFlux
-    variable = zi
-    fluid_component = 1
-  []
-   [disp1]
-    type = PorousFlowDispersiveFlux
-    variable = zi
-    disp_trans = '0 0'
-    disp_long = '0 0'
-    fluid_component = 1
-    use_displaced_mesh = false
-  []
+ # [mass1]
+ #   type = PorousFlowMassTimeDerivative
+ #   variable = zi
+ #   fluid_component = 1
+ # []
+ # [adv1]
+ #   type = PorousFlowAdvectiveFlux
+ #   variable = zi
+ #   fluid_component = 1
+ # []
+ #  [disp1]
+ #   type = PorousFlowDispersiveFlux
+ #   variable = zi
+ #   disp_trans = '0 0'
+ #   disp_long = '0 0'
+ #   fluid_component = 1
+ #   use_displaced_mesh = false
+ # []
   [energy]
     type = PorousFlowEnergyTimeDerivative
     variable = temperature
