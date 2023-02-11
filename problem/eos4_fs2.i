@@ -1,10 +1,12 @@
 # TOUGH2 EOS3/4 example
 
+# NOTE: The difference between eos_fs and eos_fs2 is the way pc and relative permeability are computed.
+
 [Mesh]
   type = GeneratedMesh
-  dim = 2
+  dim = 1
   nx = 500
-  xmax = 100
+  xmax = 10000    #100
   ny = 1
   ymax = 4.5
   bias_x = 1.01
@@ -24,7 +26,7 @@
 [UserObjects]
   [dictator]
     type = PorousFlowDictator
-    porous_flow_vars = 'pgas zi temperature'
+    porous_flow_vars = 'pgas  zi temperature'
     number_fluid_phases = 2
     number_fluid_components = 2
   []
@@ -54,6 +56,9 @@
   [pgas]
     initial_condition = 1E5
   []
+  [zi]
+    initial_condition = 0.01 #0.20 #0.14 
+  []
   [temperature]
     initial_condition = 291.15 
   []
@@ -61,9 +66,6 @@
 
 
 [AuxVariables]
-  [zi]
-    initial_condition = 0.20 #0.14 
-  []
   [sgas]
    order = CONSTANT
    family = MONOMIAL
@@ -122,24 +124,24 @@
     fluid_component = 0
     use_displaced_mesh = false
   []
- # [mass1]
- #   type = PorousFlowMassTimeDerivative
- #   variable = zi
- #   fluid_component = 1
- # []
- # [adv1]
- #   type = PorousFlowAdvectiveFlux
- #   variable = zi
- #   fluid_component = 1
- # []
- #  [disp1]
- #   type = PorousFlowDispersiveFlux
- #   variable = zi
- #   disp_trans = '0 0'
- #   disp_long = '0 0'
- #   fluid_component = 1
- #   use_displaced_mesh = false
- # []
+  [mass1]
+    type = PorousFlowMassTimeDerivative
+    variable = zi
+    fluid_component = 1
+  []
+  [adv1]
+    type = PorousFlowAdvectiveFlux
+    variable = zi
+    fluid_component = 1
+  []
+   [disp1]
+    type = PorousFlowDispersiveFlux
+    variable = zi
+    disp_trans = '0 0'
+    disp_long = '0 0'
+    fluid_component = 1
+    use_displaced_mesh = false
+  []
   [energy]
     type = PorousFlowEnergyTimeDerivative
     variable = temperature
@@ -197,7 +199,7 @@
   [] 
   [diffusivity]
     type = PorousFlowDiffusivityConst
-    diffusion_coeff = '0  2.13E-5  0 2.13E-5'
+    diffusion_coeff = ' 0 2.13E-5 0 2.13E-5 '
     tortuosity = '0.25 0.25'
   []
   [rock_thermal_conductivity]
