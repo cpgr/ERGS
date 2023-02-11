@@ -1,13 +1,18 @@
 #TOUGH2 EOS3/4 example
 
+# NOTE: set xmax = 10000 and dim = 1 or 2 for faster convergence
+# The plot of primary variables versus distance from the source are different depending on 
+# how the dispersive coefficients are set. It seems the best way is: '0  2.13E-5  0  2.13E-5'
+# zi is set to 0.01 for the initial gas saturation condition (i.e., sgas = 0.20)
+
 [Mesh]
  # [efmcube]
  # type = FileMeshGenerator
  # file = eos3.msh
  # []
   type = GeneratedMesh
-  dim = 1
-  nx = 500
+  dim = 2
+  nx = 500   #500
   xmax = 100 #1000
   ny = 1
   ymax = 4.5
@@ -57,7 +62,7 @@
     initial_condition = 1.0E5
   []
   [zi]
-    initial_condition = 0.20  #0.14
+    initial_condition = 0.01  #0.14 0.01 to make it converge
   []
   [temperature]
     initial_condition = 291.15
@@ -177,15 +182,11 @@
   [relperm0]
     type = PorousFlowRelativePermeabilityVG
     m = 0.45
-    s_res = 9.6e-4
-    sum_s_res = 9.6e-4
     phase = 0
   []
   [relperm1]
-    type = PorousFlowRelativePermeabilityCorey
-    n = 2
-    s_res = 0.05
-    sum_s_res = 0.35
+    type = PorousFlowRelativePermeabilityVG
+    m = 0.45
     phase = 1
   []
   [porosity]
@@ -199,7 +200,7 @@
   [] 
   [diffusivity]
     type = PorousFlowDiffusivityConst
-    diffusion_coeff = '0 2.13E-5 0 2.13E-5'
+    diffusion_coeff = ' 0 2.13E-5 0  2.13E-5'
     tortuosity = '0.25 0.25'
   []
   [rock_thermal_conductivity]
