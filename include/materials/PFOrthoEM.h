@@ -21,22 +21,22 @@
 class PFOrthoEM : public PFEMBase
 {
 public:
-	static InputParameters validParams();
+  static InputParameters validParams();
 
-	PFOrthoEM(const InputParameters& parameters);
+  PFOrthoEM(const InputParameters & parameters);
 
 protected:
-	void computeQpProperties() ;
+  void computeQpProperties();
 
-	/// mean fracture distance in all 3 directions
-    std::vector<double> _alpha;
+  /// mean fracture distance in all 3 directions
+  std::vector<double> _alpha;
 
-	/// Threshold strain in all 3 directions
-     std::vector<double> _eps;
+  /// Threshold strain in all 3 directions
+  std::vector<double> _eps;
 
-	/// Tensor that holds the normal vector to the fracture surface in each direction
-	RealTensorValue _NVec;
+  /// Tensor that holds the normal vector to the fracture surface in each direction
+  RealTensorValue _NVec;
 
-	const Real& _rotXY;
-	const Real& _rotYZ;
+  const Real _rotXY;
+  const Real _rotYZ;
 };

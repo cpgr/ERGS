@@ -3,9 +3,9 @@
 #include "PorousFlowPermeabilityBase.h"
 #include "RankTwoTensor.h"
 #include <Eigen/Geometry>
-//#include <RandomInterface.h>
-//#include "RandomData.h"
-//#include <InitialConditionBase.h>
+// #include <RandomInterface.h>
+// #include "RandomData.h"
+// #include <InitialConditionBase.h>
 #include "MooseTypes.h"
 #include "MooseEnumItem.h"
 
@@ -28,74 +28,73 @@
 class PFEMBase : public PorousFlowPermeabilityBase
 {
 public:
-	static InputParameters validParams();
+  static InputParameters validParams();
 
-	PFEMBase(const InputParameters& parameters);
+  PFEMBase(const InputParameters & parameters);
 
 protected:
+  void computeQpProperties() override;
+  Distribution const * _distribution;
 
-	void computeQpProperties() override;
-	Distribution const* _distribution;
+  /// optional parameter that allows multiple mechanics materials to be defined
+  const std::string _base_name;
 
-	/// optional parameter that allows multiple mechanics materials to be defined
-	const std::string _base_name;
+  /// mean fracture distance
+  const Real _a;
 
-	/// mean fracture distance
-	const Real _a;
+  /// Initial fracture aperture
+  const Real _b0;
 
-	/// Initial fracture aperture
-	const Real _b0;
+  /// Threshold strain
+  const Real _e0;
 
-	/// Threshold strain
-	const Real _e0;
+  /// matrix/intrinsic permeability
+  const Real _km;
 
-	/// matrix/intrinsic permeability
-	const Real _km;
+  /// whether normal vector to fracture is constant or not
+  bool _n_const;
 
-	/// whether normal vector to fracture is constant or not
-	bool _n_const;
+  /// whether to use random rotation angle or fix
+  bool _Random_field;
 
-	/// whether to use random rotation angle or fix
-	bool _Random_field;
+  /// normal vector to fracture surface
+  RealVectorValue _nVec;
 
-	/// normal vector to fracture surface
-	RealVectorValue _nVec;
+  /// string to hold the name of the fracture rotation angle around xy
+  std::string _phi_xy;
 
-	/// string to hold the name of the fracture rotation angle around xy
-	std::string _phi_xy;
+  /// string to hold the name of the fracture rotation angle around yz
+  std::string _phi_yz;
 
-	/// string to hold the name of the fracture rotation angle around yz
-	std::string _phi_yz;
+  /// Structure tensor M_{ij} = n⊗n {not used}
+  const RankTwoTensor _M;
 
-	/// Structure tensor M_{ij} = n⊗n {not used}
-	const RankTwoTensor _M;
+  ///  Identity RankTwotensor I_{ij}
+  const RankTwoTensor _identity_two;
 
-	///  Identity RankTwotensor I_{ij}
-	const RankTwoTensor _identity_two;
+  /// get the stress tensor
+  const MaterialProperty<RankTwoTensor> & _stress;
 
-	/// get the stress tensor
-	const MaterialProperty<RankTwoTensor>& _stress;
+  /// get the strain tensor (actually, this is the creep strain)
+  const MaterialProperty<RankTwoTensor> & _strain;
 
-	/// get the strain tensor (actually, this is the creep strain)
-	const MaterialProperty<RankTwoTensor>& _strain;
+  /// fracture rotation angles about xy and yz (in radians)
+  const Real _fix_rad_xy;
+  const Real _fix_rad_yz;
 
-	/// fracture rotation angles about xy and yz (in radians)
-	const Real _fix_rad_xy;
-	const Real _fix_rad_yz;
+  /// random rotation_angle_for_each_element
+  MaterialProperty<Real> & _randm_rad_xy;
+  MaterialProperty<Real> & _randm_rad_yz;
 
-	/// random rotation_angle_for_each_element
-	MaterialProperty<Real>& _randm_rad_xy;
-	MaterialProperty<Real>& _randm_rad_yz;
+  /// Computed strain in the fracture normal vector direction as a material property
+  MaterialProperty<Real> & _en;
 
-	/// Computed strain in the fracture normal vector direction as a material property
-	MaterialProperty<Real>& _en;
+  /// Lower and Upper bound of the 'randomly' or the 'uniformly distributed random' generated values
+  const Real _min;
+  const Real _max;
 
-	/// Lower and Upper bound of the 'randomly' or the 'uniformly distributed random' generated values
-	const Real _min;
-	const Real _max;
+  std::size_t _seed;
 
-	std::size_t _seed;
-
-	const Real& _rotXY;
-	const Real&  _rotYZ;
+  const Real _rotXY;
+  const Real _rotYZ;
 };
