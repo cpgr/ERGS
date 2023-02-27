@@ -1,13 +1,31 @@
+/******************************************************************************/
+/*         PERGS - Permeability for Enhanced RockSalt Geothermal Systems      */
+/*                                                                            */
+/*          Copyright (C) 2022 by Ishmael Dominic Yevugah                     */
+/*        University of Manitoba, Price Faculty of Engineering                */
+/*                                                                            */
+/*        Special Thanks to Guillaume Giudicelli, Chris Green                 */
+/*        and the rest of the Moose Team for helping on the model             */
+/*                                                                            */
+/*       This program is free software: you can redistribute it and/or modify */
+/*    it under the terms of the GNU General Public License as published by    */
+/*      the Free Software Foundation, either version 3 of the License, or     */
+/*                     (at your option) any later version.                    */
+/*                                                                            */
+/*       This program is distributed in the hope that it will be useful,      */
+/*       but WITHOUT ANY WARRANTY; without even the implied warranty of       */
+/*        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       */
+/*                GNU General Public License for more details.                */
+/*                                                                            */
+/*      You should have received a copy of the GNU General Public License     */
+/*    along with this program.  If not, see <http://www.gnu.org/licenses/>    */
+/******************************************************************************/
+
 #pragma once
 
 #include "PorousFlowPermeabilityBase.h"
 #include "RankTwoTensor.h"
 #include <Eigen/Geometry>
-//#include <RandomInterface.h>
-//#include "RandomData.h"
-//#include <InitialConditionBase.h>
-#include "MooseTypes.h"
-#include "MooseEnumItem.h"
 
 /**
  * Material designed to provide the permeability tensor which is a function of
@@ -35,7 +53,6 @@ public:
 protected:
 
 	void computeQpProperties() override;
-	Distribution const* _distribution;
 
 	/// optional parameter that allows multiple mechanics materials to be defined
 	const std::string _base_name;
@@ -80,8 +97,8 @@ protected:
 	const MaterialProperty<RankTwoTensor>& _strain;
 
 	/// fracture rotation angles about xy and yz (in radians)
-	const Real _fix_rad_xy;
-	const Real _fix_rad_yz;
+	const Real& _fix_rad_xy;
+	const Real& _fix_rad_yz;
 
 	/// random rotation_angle_for_each_element
 	MaterialProperty<Real>& _randm_rad_xy;
@@ -90,12 +107,7 @@ protected:
 	/// Computed strain in the fracture normal vector direction as a material property
 	MaterialProperty<Real>& _en;
 
-	/// Lower and Upper bound of the 'randomly' or the 'uniformly distributed random' generated values
-	const Real _min;
-	const Real _max;
+	const VariableValue& _rotXY;
+	const VariableValue& _rotYZ;
 
-	std::size_t _seed;
-
-	const Real& _rotXY;
-	const Real&  _rotYZ;
 };
