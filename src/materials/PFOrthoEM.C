@@ -1,3 +1,28 @@
+/******************************************************************************/
+/*         PERGS - Permeability for Enhanced RockSalt Geothermal Systems      */
+/*                                                                            */
+/*          Copyright (C) 2022 by Ishmael Dominic Yevugah                     */
+/*      University of Manitoba, Price Faculty of Engineering                  */
+/*                                                                            */
+/*        Special Thanks to Guillaume Giudicelli, Chris Green                 */
+/*        and the rest of the Moose Team for helping on the model             */
+/*                                                                            */
+/*       This program is free software: you can redistribute it and/or modify */
+/*    it under the terms of the GNU General Public License as published by    */
+/*      the Free Software Foundation, either version 3 of the License, or     */
+/*                     (at your option) any later version.                    */
+/*                                                                            */
+/*       This program is distributed in the hope that it will be useful,      */
+/*       but WITHOUT ANY WARRANTY; without even the implied warranty of       */
+/*        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       */
+/*                GNU General Public License for more details.                */
+/*                                                                            */
+/*      You should have received a copy of the GNU General Public License     */
+/*    along with this program.  If not, see <http://www.gnu.org/licenses/>    */
+/******************************************************************************/
+
+
+
 #include "PFOrthoEM.h"
 
 registerMooseObject("PorousFlowApp", PFOrthoEM);
@@ -23,8 +48,6 @@ PFOrthoEM::validParams()
     params.addRequiredParam<std::vector<double>>("eps0", "threshold strain");
     params.addParam<RealTensorValue>("N",
                            "normal vector wrt to fracture surface");
-                           params.addRequiredCoupledVar("rotation_angleXY", "The rotation field.");
-                           params.addRequiredCoupledVar("rotation_angleYZ", "The rotation field.");
   return params;
 }
 
@@ -35,11 +58,10 @@ PFOrthoEM::PFOrthoEM(
     _eps(getParam<std::vector<double>>("eps0")),
     _NVec(parameters.isParamValid("N")
                   ? getParam<RealTensorValue>("N")
-                  : RealTensorValue(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)),
-                  _rotXY(coupled("rotation_angleXY")),
-                  _rotYZ(coupled("rotation_angleYZ"))
+                  : RealTensorValue(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
 {
 }
+
 
 void
 PFOrthoEM::computeQpProperties()
@@ -68,48 +90,30 @@ PFOrthoEM::computeQpProperties()
       }
 
 
-      Real  _rad_xy;
-      Real  _rad_yz;
     if (_Random_field)
   // Get the spatially random rotation angle (in radians) for each element at each timestep either
   // from a specific distribution or randomly.
       {
-/*
-          if (_distribution)
-        // Get random field from the specified distribution
-          {
-            _randm_rad_xy[_qp] = _distribution->quantile(generateRandom());
-            _randm_rad_yz[_qp] = _distribution->quantile(generateRandom());
-          }
-          else
-         // Get random field between min and max.
-          {
-*/
-           _randm_rad_xy[_qp] =  _rotXY; //(_current_elem->id())/2.0; //generateRandom() * (_max - _min) + _min;
-           _randm_rad_yz[_qp] =  _rotYZ; //(_current_elem->id())/2.0; //generateRandom() * (_max - _min) + _min;
-//           }
-        _rad_xy = _rotXY; //_randm_rad_xy[_qp]; //_randm_rad_xy[_qp];//generateRandom() * (_max - _min) + _min;
-        _rad_yz = _rotYZ; //_randm_rad_yz[_qp]; //_randm_rad_yz[_qp]; //generateRandom() * (_max - _min) + _min;
-        }
+        _randm_rad_xy[_qp] = _rotXY[_qp];
+        _randm_rad_yz[_qp] = _rotYZ[_qp];
+      }
       else
   // Get the fixed (or user-specified) rotation angle for all elements in the domain at each timestep.
       {
-        _rad_xy = _fix_rad_xy;
-        _rad_yz = _fix_rad_yz;
-
+        _randm_rad_xy[_qp] = _fix_rad_xy;
+        _randm_rad_yz[_qp] = _fix_rad_yz;
       }
-
 
   // The fracture normal vectors captured in the Tensor (_n) are rotated around both Z-axis
   // (i.e., X-Y plane) and X-axis (i.e., Y-Z plane) during random rotation of the material using
   // the  rotation matrices below. (See Zill et al. for why material is randomly rotated)
 
     RankTwoTensor rotMat_xy;
-    rotMat_xy(0, 0) = std::cos(_rad_xy);
-    rotMat_xy(0, 1) = -std::sin(_rad_xy);
+    rotMat_xy(0, 0) = std::cos(_randm_rad_xy[_qp]);
+    rotMat_xy(0, 1) = -std::sin(_randm_rad_xy[_qp]);
     rotMat_xy(0, 2) = 0;
-    rotMat_xy(1, 0) = std::sin(_rad_xy);
-    rotMat_xy(1, 1) = std::cos(_rad_xy);
+    rotMat_xy(1, 0) = std::sin(_randm_rad_xy[_qp]);
+    rotMat_xy(1, 1) = std::cos(_randm_rad_xy[_qp]);
     rotMat_xy(1, 2) = 0;
     rotMat_xy(2, 0) = 0;
     rotMat_xy(2, 1) = 0;
@@ -120,11 +124,11 @@ PFOrthoEM::computeQpProperties()
     rotMat_yz(0, 1) = 0;
     rotMat_yz(0, 2) = 0;
     rotMat_yz(1, 0) = 0;
-    rotMat_yz(1, 1) = std::cos(_rad_yz);
-    rotMat_yz(1, 2) = -std::sin(_rad_yz);
+    rotMat_yz(1, 1) = std::cos(_randm_rad_yz[_qp]);
+    rotMat_yz(1, 2) = -std::sin(_randm_rad_yz[_qp]);
     rotMat_yz(2, 0) = 0;
-    rotMat_yz(2, 1) = std::sin(_rad_yz);
-    rotMat_yz(2, 2) = std::cos(_rad_yz);
+    rotMat_yz(2, 1) = std::sin(_randm_rad_yz[_qp]);
+    rotMat_yz(2, 2) = std::cos(_randm_rad_yz[_qp]);
 
  // The permeability is computed by first initializing it:
     RankTwoTensor I = _identity_two;
