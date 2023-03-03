@@ -12,7 +12,7 @@
   nx = 500   #500
   xmax = 10000 #1000
   xmin = 1
-  ny = 1
+  ny = 10
   ymax = 4.5
   ymin = 1
   bias_x = 1.01
