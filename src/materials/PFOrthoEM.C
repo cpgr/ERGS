@@ -161,6 +161,7 @@ PFOrthoEM::computeQpProperties()
 
    auto _M = RankTwoTensor::selfOuterProduct(n_r);
 
+   
    _permeability_qp[_qp] += coeff * (I - _M);
  }
 }
