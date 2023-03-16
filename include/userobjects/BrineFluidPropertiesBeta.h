@@ -158,7 +158,7 @@ protected:
   Real _XgSat;
   Real _Psat;
 
-  //Params for water
+  //Params for Nacl
   const Real _T_triple;
   const Real _p_triple;
 
