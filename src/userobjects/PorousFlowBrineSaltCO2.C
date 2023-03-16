@@ -41,10 +41,10 @@ PorousFlowBrineSaltCO2::PorousFlowBrineSaltCO2(const InputParameters & parameter
   if (_co2_fp.fluidName() != "co2")
     paramError("co2_fp", "A valid CO2 FluidProperties UserObject must be provided");
 
-  if (_brine_fp.fluidName() != "brineSalt")
+  if (_brine_fp.fluidName() != "brine")
     paramError("brine_fp", "A valid Brine FluidProperties UserObject must be provided");
 
-  if (_water_fp.fluidName() != "waterSalt")
+  if (_water_fp.fluidName() != "water")
     paramError("water_fp", "A valid water FluidProperties UserObject must be provided in water_fp");
 
   // Set the number of phases and components, and their indexes
@@ -83,7 +83,7 @@ PorousFlowBrineSaltCO2::PorousFlowBrineSaltCO2(const InputParameters & parameter
 std::string
 PorousFlowBrineSaltCO2::fluidStateName() const
 {
-  return "brine-salt-co2";
+  return "brine_salt_co2";
 }
 
 void
