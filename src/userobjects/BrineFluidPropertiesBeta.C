@@ -6,7 +6,7 @@ InputParameters
 BrineFluidPropertiesBeta::validParams()
 {
   InputParameters params = BrineFluidProperties::validParams();
-  params.addParam<Real>("alpha", 2.47260e-2," Constant");
+  params.addParam<Real>("alpha", 2.47260e-2," Constant Driesner");
   params.addParam<Real>("y", 6.5," correction factor for temperatures"
                          "less than 350 degrees");
   params.addParam<Real>("XgSat",1," Mass fraction of halite in the"
@@ -28,7 +28,7 @@ BrineFluidPropertiesBeta::BrineFluidPropertiesBeta(const InputParameters & param
   _p_triple(50.0),  // note, pressure is in Pa. need to convert to bar in the function
   _T_triple(1073.85) // note, temp is in K. need to convert to dCelsius in function
 {
-  const std::string water_name = name() + ":water";
+  const std::string water_name = name() + ":water_new";
   {
     const std::string class_name = "Water97FluidProperties";
     InputParameters params = _app.getFactory().getValidParams(class_name);
@@ -43,7 +43,7 @@ BrineFluidPropertiesBeta::BrineFluidPropertiesBeta(const InputParameters & param
     _water_fp = &getUserObject<SinglePhaseFluidProperties>("water_fp");
 
     // Check that a water userobject has actually been supplied
-    if (_water_fp->fluidName() != "water")
+    if (_water_fp->fluidName() != "water_new")
       paramError("water_fp", "A water FluidProperties UserObject must be supplied");
   }
   else
@@ -53,7 +53,7 @@ BrineFluidPropertiesBeta::BrineFluidPropertiesBeta(const InputParameters & param
   }
 
   // SinglePhaseFluidProperties UserObject for NaCl
-  const std::string nacl_name = name() + ":nacl";
+  const std::string nacl_name = name() + ":nacl_new";
   {
     const std::string class_name = "NaClFluidProperties";
     InputParameters params = _app.getFactory().getValidParams(class_name);
@@ -88,7 +88,7 @@ BrineFluidPropertiesBeta::getComponent(unsigned int component) const
 std::string
 BrineFluidPropertiesBeta::fluidName() const
 {
-  return "brineSalt";
+  return "brine";
 }
 
 FPDualReal
