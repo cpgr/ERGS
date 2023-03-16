@@ -122,7 +122,7 @@ PorousFlowWaterAir::thermophysicalProperties(Real pressure,
 
   // Vapor pressure (with lowering capability)
   DualReal numer = _Mh2o *_pc.capillaryPressure(liquid.saturation, qp) * liquid.saturation;
-  DualReal deno  = liquid.density * _R * T;
+  DualReal deno  = liquid.density * _R * (T);
   DualReal f_vpl = std::exp(numer/deno);
   DualReal pv = f_vpl * psat;
 
