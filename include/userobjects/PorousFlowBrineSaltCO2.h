@@ -129,6 +129,19 @@ public:
                         std::vector<FluidStateProperties> & fsp) const;
 
   /**
+   * Thermophysical properties of the solid state (pure Halite)
+   *
+   * @param pressure solid pressure (Pa)
+   * @param temperature temperature (K)
+   * @param Xnacl NaCl mass fraction (kg/kg)
+   * @param[out] FluidStateProperties data structure
+   */
+  void solidProperties(const DualReal& pressure,
+      const DualReal& temperature,
+      std::vector<FluidStateProperties>& fsp) const;
+
+
+  /**
    * Gas saturation in the two-phase region
    *
    * @param pressure gas pressure (Pa)
@@ -470,4 +483,7 @@ protected:
   const SinglePhaseFluidProperties& _water_fp;
   /// Fluid properties UserObject for water (used to access Henry's law)
   const Water97FluidProperties& _water97_fp;
+
+  /// Solid phase index
+  const unsigned int _solid_phase_number;
 };
