@@ -142,8 +142,7 @@ PorousFlowBrineSaltCO2::thermophysicalProperties(Real pressure,
   // Set the gas saturations
   // note: since it is single gas phase, gas saturation is 1. It
   // is not used in the gas properties, instead the total mass
-  // fraction is used. Also, gas properties account for gas pressure because
-  // water vapor is accounted for compared to PFBrineCO2
+  // fraction is used.
       gas.saturation = 1.0;
 
       // Calculate gas properties
@@ -156,8 +155,7 @@ PorousFlowBrineSaltCO2::thermophysicalProperties(Real pressure,
     {
       // Set the gas saturations
       // note: since it is single liquid phase, gas and solid saturation are 0,
-      // although they are not used in the liquid properties. Instead, the total mass
-      // fraction is used.
+      // although they are not used in the liquid properties.
       gas.saturation = 0.0;
 
       // Calculate the liquid properties
@@ -188,6 +186,7 @@ PorousFlowBrineSaltCO2::thermophysicalProperties(Real pressure,
   // Save pressures to FluidStateProperties object
   gas.pressure = p;
   liquid.pressure = p - _pc.capillaryPressure(liquid.saturation, qp);
+  solid.pressure = p; // pressure in solid phase is the same as gas phase. no Pc
 }
 
 void
@@ -215,7 +214,7 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
   // be dissolved/dissapear, and the equilibrium mass fractions do not need to be computed
 
   // note: Zmin is minimum amount of co2 that could exist in the gas phase. Hence,
-  // above info means that if CO2 is less than the smallest amount set, then there
+  // the above info means that if CO2 is less than the smallest amount set, then there
   // is no Co2 in the gas phase and all CO2 is concentrated in the liquid phase.
   // Therefore, there is no multiphase.
   if (Z < _Zmin)
@@ -300,7 +299,7 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
     case FluidStatePhaseEnum::TWOPHASE:
     {
       // Keep equilibrium mass fractions
-      Xh2o = 1.0 - Xco2 - Xnacl; //  H2O in gas phase corrected with halite in the gas phase
+      Xh2o = 1.0 - Xco2 - Xnacl; //  H2o in gas phase corrected with halite in the gas phase
       break;
     }
   }
@@ -504,7 +503,7 @@ PorousFlowBrineSaltCO2::MultiPhaseProperties(const DualReal & pressure,
   liquidProperties(liquid_pressure, temperature, Xnacl, fsp);
 
   // The solid properties (note that the effect of liquid and gas adsorptions is neglected)
-  // Pc affects only fluids
+  // Pc occurs only in fluids
   solidProperties(pressure, temperature, fsp);
 }
 
