@@ -151,7 +151,7 @@ public:
    * @param FluidStateProperties data structure
    * @return gas saturation (-)
    */
-  DualReal saturation(const DualReal & pressure,
+  DualReal saturationGAS(const DualReal & pressure,
                       const DualReal & temperature,
                       const DualReal & Xnacl,
                       const DualReal & Z,
@@ -167,7 +167,7 @@ public:
    * @param qp quadpoint for capillary presssure
    * @param[out] FluidStateProperties data structure
    */
-  void twoPhaseProperties(const DualReal & pressure,
+  void MultiPhaseProperties(const DualReal & pressure,
                           const DualReal & temperature,
                           const DualReal & Xnacl,
                           const DualReal & Z,
@@ -486,4 +486,7 @@ protected:
 
   /// Solid phase index
   const unsigned int _solid_phase_number;
+
+  /// initial non-zero salt saturation
+  const DualReal _saturationSOLID;
 };
