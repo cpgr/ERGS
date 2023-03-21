@@ -455,7 +455,7 @@ protected:
 
   /// Salt component index
   const unsigned int _salt_component;
-  /// Fluid properties UserObject for water
+  /// Fluid properties UserObject for brine
   const BrineFluidPropertiesBeta & _brine_fp;
   /// Fluid properties UserObject for the CO2
   const SinglePhaseFluidProperties & _co2_fp;
@@ -479,14 +479,16 @@ protected:
   /// Henry's coefficeients for CO2
   const std::vector<Real> _co2_henry;
 
-  /// Fluid properties UserObject for water
+    /// Fluid properties UserObject for water
   const SinglePhaseFluidProperties& _water_fp;
-  /// Fluid properties UserObject for water (used to access Henry's law)
+    /// Fluid properties UserObject for water (used to access Henry's law)
   const Water97FluidProperties& _water97_fp;
+
+
 
   /// Solid phase index
   const unsigned int _solid_phase_number;
 
   /// initial non-zero salt saturation
-  const DualReal _saturationSOLID;
+  const Real _saturationSOLID;
 };
