@@ -21,12 +21,12 @@ BrineFluidPropertiesBeta::validParams()
 
 BrineFluidPropertiesBeta::BrineFluidPropertiesBeta(const InputParameters & parameters)
   : BrineFluidProperties(parameters),
-  _alpha(Real(getParam<Real>("alpha"))),
-  _y(Real(getParam<Real>("y"))),
-  _XgSat(Real(getParam<Real>("XgSat"))),
-  _Psat(Real(getParam<Real>("Psat"))),
-  _p_triple(50.0),  // note, pressure is in Pa. need to convert to bar in the function
-  _T_triple(1073.85) // note, temp is in K. need to convert to dCelsius in function
+    _alpha(Real(getParam<Real>("alpha"))),
+    _y(Real(getParam<Real>("y"))),
+    _XgSat(Real(getParam<Real>("XgSat"))),
+    _Psat(Real(getParam<Real>("Psat"))),
+    _T_triple(1073.85), // note, temp is in K. need to convert to dCelsius in function
+    _p_triple(50.0)    // note, pressure is in Pa. need to convert to bar in the function
 
 {
 //note: Below, the fluid property objects are assigned new names because a fluid
