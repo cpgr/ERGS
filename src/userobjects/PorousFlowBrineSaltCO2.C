@@ -17,7 +17,7 @@ PorousFlowBrineSaltCO2::validParams()
   params.addRequiredParam<UserObjectName>("co2_fp", "The name of the user object for CO2");
   params.addParam<unsigned int>("salt_component", 2, "The component number of salt");
   params.addParam<unsigned int>("solid_phase_number", 2, "The phase number for salt");
-  params.addParam<DualReal>("saturationSOLID", 0.01, "A small non-zero initial saturation"
+  params.addParam<Real>("saturationSOLID", 0.01, "A small non-zero initial saturation"
                              "of halite in the multiphase system");
   params.addClassDescription("Fluid state class for brine, salt and Co2. Includes the"
                               "dissolution/precipitation of the solid-salt/halite");
@@ -41,7 +41,8 @@ PorousFlowBrineSaltCO2::PorousFlowBrineSaltCO2(const InputParameters & parameter
     _Tupper(382.15),
     _Zmin(1.0e-4),
     _co2_henry(_co2_fp.henryCoefficients()),
-    _saturationSOLID(getParam<DualReal>("saturationSOLID"))
+  //  _saturationSOLID(getParam<DualReal>("saturationSOLID"))
+    _saturationSOLID(Real(getParam<Real>("saturationSOLID")))
 {
   // Check that 'all' the added FluidProperty UserObjects specific
   // to this fluid_state property is properly accounted for.
@@ -66,15 +67,15 @@ PorousFlowBrineSaltCO2::PorousFlowBrineSaltCO2(const InputParameters & parameter
                "This value is larger than the possible number of phases ",
                _num_phases);
 
-// Check that the solid phase number/index is not identical to the aqueous phase number/index
+  // Check that the solid phase number/index is not identical to the aqueous phase number/index
   if (_solid_phase_number == _aqueous_phase_number)
     paramError( "solid_phase_number",
           "The value provided must be different from the value entered in aqueous_phase_number");
 
-// Check that solid_phase number is <= total number of phases
-  if (_salt_component >= _num_components)
-    paramError("salt_component",
-      "The value provided is larger than the possible number of fluid components",
+  // Check that solid_phase number is <= total number of phases
+  if (_solid_phase_number >= _num_phases)
+    paramError("solid_phase_number",
+      "The value provided is larger than the possible number of phases",
                 _num_phases);
 
   // Check that _aqueous_fluid_component is <= total number of fluid components
@@ -179,7 +180,6 @@ PorousFlowBrineSaltCO2::thermophysicalProperties(Real pressure,
 
   // set the solid/halite saturation (initialized to a small non-zero number)
   solid.saturation = _saturationSOLID;
-
   // Liquid saturations can now be set
   liquid.saturation = 1.0 - gas.saturation - solid.saturation;
 
@@ -212,13 +212,14 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
 
   // If the amount of CO2 is less than the smallest solubility,then all CO2 will
   // be dissolved/dissapear, and the equilibrium mass fractions do not need to be computed
-
+  if (Z < _Zmin)
   // note: Zmin is minimum amount of co2 that could exist in the gas phase. Hence,
   // the above info means that if CO2 is less than the smallest amount set, then there
   // is no Co2 in the gas phase and all CO2 is concentrated in the liquid phase.
   // Therefore, there is no multiphase.
-  if (Z < _Zmin)
+  {
     phase_state = FluidStatePhaseEnum::LIQUID;
+  }
   else if (Xnacl > XEQ)
      {
   // the amount of halite in the liquid phase is greater than or above its solubility/concentration
@@ -404,6 +405,7 @@ PorousFlowBrineSaltCO2::liquidProperties(const DualReal & pressure,
   liquid.internal_energy = liquid.enthalpy - pressure / liquid.density;
 }
 
+
 void
 PorousFlowBrineSaltCO2::solidProperties(const DualReal & pressure,
                                         const DualReal & temperature,
@@ -427,6 +429,7 @@ PorousFlowBrineSaltCO2::solidProperties(const DualReal & pressure,
   mooseAssert(solid.density.value() > 0.0, "solid density must be greater than zero");
   solid.internal_energy = solid.enthalpy - pressure / solid.density;
 }
+
 
 DualReal
 PorousFlowBrineSaltCO2::saturationGAS(const DualReal & pressure,
@@ -485,8 +488,8 @@ PorousFlowBrineSaltCO2::MultiPhaseProperties(const DualReal & pressure,
                                        std::vector<FluidStateProperties> & fsp) const
 {
   auto & gas = fsp[_gas_phase_number];
-  auto & solid = fsp[_solid_phase_number];
-  auto & liquid = fsp[_aqueous_fluid_component];
+//  auto & solid = fsp[_solid_phase_number];
+//  auto & liquid = fsp[_aqueous_fluid_component];
 
   // The gas saturation in the multiphase system
   gas.saturation = saturationGAS(pressure, temperature, Xnacl, Z, fsp);
