@@ -21,10 +21,10 @@ BrineFluidPropertiesBeta::validParams()
 
 BrineFluidPropertiesBeta::BrineFluidPropertiesBeta(const InputParameters & parameters)
   : BrineFluidProperties(parameters),
-  _alpha(getParam<Real>("alpha")),
-  _y(getParam<Real>("y")),
-  _XgSat(getParam<Real>("XgSat")),
-  _Psat(getParam<Real>("Psat")),
+  _alpha(Real(getParam<Real>("alpha"))),
+  _y(Real(getParam<Real>("y"))),
+  _XgSat(Real(getParam<Real>("XgSat"))),
+  _Psat(Real(getParam<Real>("Psat"))),
   _p_triple(50.0),  // note, pressure is in Pa. need to convert to bar in the function
   _T_triple(1073.85) // note, temp is in K. need to convert to dCelsius in function
 
@@ -61,7 +61,8 @@ BrineFluidPropertiesBeta::BrineFluidPropertiesBeta(const InputParameters & param
   // SinglePhaseFluidProperties UserObject for NaCl
   const std::string nacl_name = name() + ":nacl_new";
   {
-    const std::string class_name = "BrineFluidPropertiesBeta";
+//    const std::string class_name = "BrineFluidPropertiesBeta";
+    const std::string class_name = "NaClFluidProperties";
     InputParameters params = _app.getFactory().getValidParams(class_name);
     if (_tid == 0)
       _fe_problem.addUserObject(class_name, nacl_name, params);
@@ -480,6 +481,7 @@ BrineFluidPropertiesBeta::haliteSolubility(Real temperature) const
   return (26.18 + 7.2e-3 * Tc + 1.06e-4 * Tc * Tc) / 100.0;
 }
 
+
 Real
 BrineFluidPropertiesBeta::haliteSolubilityWater(Real temperature, Real pressure) const
 {
@@ -513,6 +515,7 @@ Real X_LSol = 0.0;
 
    return X_LSol;
 }
+
 
 DualReal
 BrineFluidPropertiesBeta::haliteSolubilityWater(DualReal temperature, DualReal pressure) const
@@ -548,6 +551,7 @@ DualReal X_LSol = 0.0;
    return X_LSol;
 }
 
+
 Real
 BrineFluidPropertiesBeta::haliteSolubilityGas(Real temperature, Real pressure) const
 {
@@ -572,6 +576,7 @@ BrineFluidPropertiesBeta::haliteSolubilityGas(DualReal temperature, DualReal pre
 }
 
 
+
 Real
 BrineFluidPropertiesBeta::halite_rho_from_p_T(Real pressure, Real temperature) const
 {
@@ -589,6 +594,7 @@ BrineFluidPropertiesBeta::halite_rho_from_p_T(Real pressure, Real temperature) c
   return density_P0 + l * pbar;
 }
 
+
 DualReal
 BrineFluidPropertiesBeta::halite_rho_from_p_T(DualReal pressure, DualReal temperature) const
 {
@@ -605,6 +611,7 @@ BrineFluidPropertiesBeta::halite_rho_from_p_T(DualReal pressure, DualReal temper
 
   return density_P0 + l * pbar;
 }
+
 
 void
 BrineFluidPropertiesBeta::halite_rho_from_p_T(
@@ -627,6 +634,7 @@ BrineFluidPropertiesBeta::halite_rho_from_p_T(
   drho_dT = ddensity_P0_dT + dl_dT * pbar;
 }
 
+
 Real
 BrineFluidPropertiesBeta::halite_h_from_p_T(Real pressure, Real temperature) const
 {
@@ -643,6 +651,7 @@ BrineFluidPropertiesBeta::halite_h_from_p_T(Real pressure, Real temperature) con
   return 8.7664e2 * (Tc - Tt) + 6.4139e-2 * (Tc * Tc - Tt * Tt) +
          8.8101e-5 * (Tc * Tc * Tc - Tt * Tt * Tt) + 44.14 * (pbar - pt);
 }
+
 
 DualReal
 BrineFluidPropertiesBeta::halite_h_from_p_T(DualReal pressure, DualReal temperature) const
