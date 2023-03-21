@@ -12,7 +12,7 @@
   nx = 500   #500
   xmax = 10000 #1000
   xmin = 1
-  ny = 10
+  ny = 1
   ymax = 4.5
   ymin = 1
   bias_x = 1.01
@@ -28,7 +28,7 @@
   [tabulated_water]
     type = TabulatedBicubicFluidProperties
     fp = true_water
-    temperature_min = 250
+    temperature_max = 600
     pressure_max = 1E8
     interpolated_properties = 'density viscosity enthalpy internal_energy'
     fluid_property_file = water97_tabulated_11.csv
@@ -40,6 +40,7 @@
     type = TabulatedBicubicFluidProperties
     fp = true_co2
     temperature_min = 250
+    temperature_max = 600
     pressure_max = 1E8
     interpolated_properties = 'density viscosity enthalpy internal_energy'
     fluid_property_file = co2_tabulated_11.csv
@@ -62,9 +63,9 @@
     alpha = 1e1 
   []
   [fs]
-    type = PorousFlowWaterNCG #PorousFlowWaterAir   #
+    type = PorousFlowWaterAir   #PorousFlowWaterNCG # 
     water_fp = true_water
-    gas_fp = true_co2 #air                # 
+    gas_fp =  air      #true_co2 #                     
     capillary_pressure = pc
   []
 []
@@ -82,9 +83,10 @@
     initial_condition = 1e5
   []
   [z]
+   scaling = 1e4
   []
   [temperature]
-    initial_condition = 18 # 291.15
+    initial_condition = 18 # 291.15     #
   []
 []
 
@@ -226,7 +228,7 @@
   []
   [diffusivity]
     type = PorousFlowDiffusivityConst
-    diffusion_coeff = ' 0  0  2.13E-5 2.13E-5'
+    diffusion_coeff = '2.13E-5 2.13E-5 0 0'
     tortuosity = '0.25 0.25'
   []
   [rock_heat]
@@ -244,7 +246,7 @@
 [DiracKernels]
   [heat_source]
     type = PorousFlowSquarePulsePointSource
-    point = '1 1 0'
+    point = '1 2.25 0'
     mass_flux = 3e3
     variable = temperature
   []
@@ -259,7 +261,7 @@
 #    mass_fraction_component = 1
 #    fluid_phase = 0
 #    flux_function = -3e3
-#  []
+# []
 #[]
 
 
@@ -284,7 +286,7 @@
 [Postprocessors]
   [xAir]
     type = PointValue
-    point =  '1 1 0'
+    point = '1 1 0'
     variable = xAir
   []
   [Pgas]
@@ -299,7 +301,7 @@
   []
   [swater]
     type = PointValue
-    point =  '1 1 0'
+    point = '1 1 0'
     variable = swater
   []
 []
@@ -320,18 +322,18 @@
   num_steps = 1e6
   end_time = 3.56E8
   nl_abs_tol = 1e-20
-  nl_max_its = 25
+  nl_max_its = 40 #25
   l_max_its = 100
   dtmax = 5e6
   [TimeStepper]
-    type = IterationAdaptiveDT
-    dt = 1e3
+     type = IterationAdaptiveDT
+     dt = 10
   []
 []
 
 [Outputs]
   exodus = true
-  sync_times = '1e5 2.592e6 3.64e7 3e8'
+  sync_times = '1e5 1.6e6 2.6e6 2e7 3e8'
   [time]
     type = CSV
   []
