@@ -21,13 +21,14 @@ EmbeddedFracturePermeabilityComponents::validParams()
   return params;
 }
 
-EmbeddedFracturePermeabilityComponents::EmbeddedFracturePermeabilityComponents(const InputParameters & parameters)
+EmbeddedFracturePermeabilityComponents::EmbeddedFracturePermeabilityComponents(
+    const InputParameters & parameters)
   : AuxKernel(parameters),
     _EmbeddedFracturePermeability(getMaterialProperty<RankTwoTensor>("PorousFlow_permeability_qp")),
-    _dictator(getUserObject<PorousFlowDictator>("PorousFlowDictator")),
-    _ph(getParam<unsigned int>("fluid_phase")),
     _i(getParam<unsigned int>("index_i")),
-    _j(getParam<unsigned int>("index_j"))
+    _j(getParam<unsigned int>("index_j")),
+    _dictator(getUserObject<PorousFlowDictator>("PorousFlowDictator")),
+    _ph(getParam<unsigned int>("fluid_phase"))
 {
   if (_ph >= _dictator.numPhases())
     paramError("fluid_phase",

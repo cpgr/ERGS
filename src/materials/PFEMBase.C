@@ -70,32 +70,32 @@ PFEMBase::validParams()
   return params;
 }
 
-PFEMBase::PFEMBase(
-    const InputParameters & parameters)
+PFEMBase::PFEMBase(const InputParameters & parameters)
   : PorousFlowPermeabilityBase(parameters),
+    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _a(getParam<Real>("a")),
     _b0(getParam<Real>("b0")),
     _e0(getParam<Real>("e0")),
     _km(getParam<Real>("km")),
-    _nVec(parameters.isParamValid("n")
-                  ? getParam<RealVectorValue>("n")
-                  : RealVectorValue(1.0, 0.0, 0.0)),
-    _identity_two(RankTwoTensor::initIdentity),
-    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
+    _Random_field(parameters.get<bool>("Random_field")),
+    _nVec(parameters.isParamValid("n") ? getParam<RealVectorValue>("n")
+                                       : RealVectorValue(1.0, 0.0, 0.0)),
+    _identity_two(RankTwoTensor::initIdentity),
     _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
+    _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
     _fix_rad_xy(getParam<Real>("fix_rad_xy")),
     _fix_rad_yz(getParam<Real>("fix_rad_yz")),
-    _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
-    _en (_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
-                              : declareProperty<Real>("fracture_normal_strain_qp")),
-     _Random_field(parameters.get<bool>("Random_field")),
-     _randm_rad_xy(_nodal_material ? declareProperty<Real>("random_xy_rotation_angle_for_each_element")
-                              : declareProperty<Real>("random_xy_rotation_angle_for_each_element_qp")),
-     _randm_rad_yz(_nodal_material ? declareProperty<Real>("random_yz_rotation_angle_for_each_element")
-                              : declareProperty<Real>("random_yz_rotation_angle_for_each_element_qp")),
-     _rotXY(coupledValue("rotation_angleXY")),
-     _rotYZ(coupledValue("rotation_angleYZ"))
+    _randm_rad_xy(_nodal_material
+                      ? declareProperty<Real>("random_xy_rotation_angle_for_each_element")
+                      : declareProperty<Real>("random_xy_rotation_angle_for_each_element_qp")),
+    _randm_rad_yz(_nodal_material
+                      ? declareProperty<Real>("random_yz_rotation_angle_for_each_element")
+                      : declareProperty<Real>("random_yz_rotation_angle_for_each_element_qp")),
+    _en(_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
+                        : declareProperty<Real>("fracture_normal_strain_qp")),
+    _rotXY(coupledValue("rotation_angleXY")),
+    _rotYZ(coupledValue("rotation_angleYZ"))
 {
 }
 

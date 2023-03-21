@@ -26,10 +26,7 @@ PorousFlowBrineSaltCO2::validParams()
 
 PorousFlowBrineSaltCO2::PorousFlowBrineSaltCO2(const InputParameters & parameters)
   : PorousFlowBrineCO2(parameters),
-    _water_fp(getUserObject<SinglePhaseFluidProperties>("water_fp")),
-    _water97_fp(getUserObject<Water97FluidProperties>("water_fp")),
     _salt_component(getParam<unsigned int>("salt_component")),
-    _solid_phase_number(getParam<unsigned int>("solid_phase_number")),
     _brine_fp(getUserObject<BrineFluidPropertiesBeta>("brine_fp")),
     _co2_fp(getUserObject<SinglePhaseFluidProperties>("co2_fp")),
     _Mh2o(_brine_fp.molarMassH2O()),
@@ -41,7 +38,10 @@ PorousFlowBrineSaltCO2::PorousFlowBrineSaltCO2(const InputParameters & parameter
     _Tupper(382.15),
     _Zmin(1.0e-4),
     _co2_henry(_co2_fp.henryCoefficients()),
-  //  _saturationSOLID(getParam<DualReal>("saturationSOLID"))
+    _water_fp(getUserObject<SinglePhaseFluidProperties>("water_fp")),
+    _water97_fp(getUserObject<Water97FluidProperties>("water_fp")),
+    _solid_phase_number(getParam<unsigned int>("solid_phase_number")),
+    //  _saturationSOLID(getParam<DualReal>("saturationSOLID"))
     _saturationSOLID(Real(getParam<Real>("saturationSOLID")))
 {
   // Check that 'all' the added FluidProperty UserObjects specific
