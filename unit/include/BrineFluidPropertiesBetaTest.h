@@ -4,13 +4,14 @@
 
 #include "BrineFluidPropertiesBeta.h"
 
+
 class BrineFluidPropertiesBeta;
 class SinglePhaseFluidProperties;
 
 class BrineFluidPropertiesBetaTest : public MooseObjectUnitTest
 {
 public:
-    BrineFluidPropertiesBetaTest() : MooseObjectUnitTest("PorousFlowApp") { buildObjects(); }
+    BrineFluidPropertiesBetaTest() : MooseObjectUnitTest("ERGSApp") { buildObjects(); }
 
 protected:
     void buildObjects()

@@ -10,7 +10,7 @@
  * Part II: Correlations for molar volume, enthalpy, and isobaric heat capacity from 0
  * to 1000 C, 1 to 500 bar, and 0 to 1 Xnacl, Geochimica et Cosmochimica Acta 71, 4902-4919.
  *
-* Note: All that is being done here is re-computing the solubility values using some
+* Note: Basically, the solubility values are being re-computed using some
 * specific 'test' variables (P and T) based on the following 2 different approaches:
 * 1) obtain the values directly using the functions we implemented in the source file
 * 2) manually compute the values w/o those functions.
@@ -30,9 +30,9 @@ TEST_F(BrineFluidPropertiesBetaTest, solubilityWater)
  */
 TEST_F(BrineFluidPropertiesBetaTest, solubilityGas)
 {
-  REL_TEST(_fp->haliteSolubilityGas(357.15,1e7), 0.00012207, 2.0e-2);
-  REL_TEST(_fp->haliteSolubilityGas(357.15,8e6), 2.86217e-05, 2.0e-2);
-  REL_TEST(_fp->haliteSolubilityGas(357.15,5e6), 1.3487e-06, 2.0e-2);
+  REL_TEST(_fp->haliteSolubilityGas(1e7), 0.00012207, 2.0e-2);
+  REL_TEST(_fp->haliteSolubilityGas(8e6), 2.86217e-05, 2.0e-2);
+  REL_TEST(_fp->haliteSolubilityGas(5e6), 1.3487e-06, 2.0e-2);
 }
 
 /**
