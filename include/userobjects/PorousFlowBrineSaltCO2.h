@@ -2,7 +2,7 @@
 
 #include "PorousFlowBrineCO2.h"
 
-//class BrineFluidProperties;
+class BrineFluidPropertiesBeta;
 //class SinglePhaseFluidProperties;
 //class Water97FluidProperties;
 
@@ -62,7 +62,9 @@ public:
                                 const DualReal & temperature,
                                 const DualReal & Xnacl,
                                 DualReal & Xco2,
-                                DualReal & Yh2o) const;
+                                DualReal & Yh2o,
+                                DualReal& Ynacl,
+                                DualReal& Snacl) const;
 
   /**
    * Mass fractions of CO2 and H2O in both phases, as well as derivatives wrt
@@ -119,7 +121,7 @@ public:
       std::vector<FluidStateProperties>& fsp) const;
 
   /**
-   * Gas saturation in the two-phase region
+   * Gas saturation in the multi-phase region
    *
    * @param pressure gas pressure (Pa)
    * @param temperature phase temperature (K)
@@ -133,6 +135,22 @@ public:
                       const DualReal & Xnacl,
                       const DualReal & Z,
                       std::vector<FluidStateProperties> & fsp) const;
+
+
+  /**
+   * Solid saturation in the multi-phase region
+   *
+   * @param pressure solid pressure (Pa)
+   * @param temperature phase temperature (K)
+   * @param Xnacl NaCl mass fraction (kg/kg)
+   * @param FluidStateProperties data structure
+   * @return solid saturation (-)
+   */
+  DualReal saturationSOLID(const DualReal& pressure,
+      const DualReal& temperature,
+      const DualReal& Xnacl,
+      std::vector<FluidStateProperties>& fsp) const;
+
 
   /**
    * Gas and liquid properties in the two-phase region
@@ -151,14 +169,18 @@ public:
                           unsigned int qp,
                           std::vector<FluidStateProperties> & fsp) const;
 
-  /// Fluid properties UserObject for brine
-  const BrineFluidPropertiesBeta & _brine_fp;
+  /// Fluid properties UserObject for brine 
+  const BrineFluidPropertiesBeta& _brine_fp;
+
   /// Fluid properties UserObject for water
   const SinglePhaseFluidProperties & _water_fp;
 
   /// Solid phase index
   const unsigned int _solid_phase_number;
 
+  /// Fluid properties UserObject for water (used to access Henry's law)
+  const Water97FluidProperties& _water97_fp;
+
   /// initial non-zero salt saturation
-  const Real _saturationSOLID;
+ /// const Real _saturationSOLID;
 };

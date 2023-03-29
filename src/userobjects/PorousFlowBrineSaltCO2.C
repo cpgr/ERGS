@@ -6,7 +6,7 @@
 #include "Water97FluidProperties.h"
 #include "NaClFluidProperties.h"
 
-registerMooseObject("PorousFlowApp", PorousFlowBrineSaltCO2);
+registerMooseObject("ERGSApp", PorousFlowBrineSaltCO2);
 
 InputParameters
 PorousFlowBrineSaltCO2::validParams()
@@ -14,9 +14,10 @@ PorousFlowBrineSaltCO2::validParams()
   InputParameters params = PorousFlowBrineCO2::validParams();
   params.addParam<unsigned int>("salt_component", 2, "The component number of salt");
   params.addParam<unsigned int>("solid_phase_number", 2, "The phase number for salt");
+  params.addRequiredParam<UserObjectName>("brine_fp", "The name of the user object for brine");
   params.addRequiredParam<UserObjectName>("water_fp", "The name of the user object for water");
-  params.addParam<Real>("saturationSOLID", 0.01, "A small non-zero initial saturation"
-                             "of halite in the multiphase system");
+//  params.addParam<Real>("saturationSOLID", 0.01, "A small non-zero initial saturation"
+//                             "of halite in the multiphase system");
   params.addClassDescription("Fluid state class for brine, salt and Co2. Includes the"
                               "dissolution/precipitation of the solid-salt/halite");
   return params;
@@ -26,8 +27,9 @@ PorousFlowBrineSaltCO2::PorousFlowBrineSaltCO2(const InputParameters & parameter
   : PorousFlowBrineCO2(parameters),
     _brine_fp(getUserObject<BrineFluidPropertiesBeta>("brine_fp")),
     _water_fp(getUserObject<SinglePhaseFluidProperties>("water_fp")),
-    _solid_phase_number(getParam<unsigned int>("solid_phase_number")),
-    _saturationSOLID(getParam<Real>("saturationSOLID"))
+    _water97_fp(getUserObject<Water97FluidProperties>("water_fp")),
+  //  _saturationSOLID(getParam<Real>("saturationSOLID"),
+    _solid_phase_number(getParam<unsigned int>("solid_phase_number"))
 {
   // Set the number of phases and components, and their indexes
   _num_phases = 3;
@@ -152,8 +154,8 @@ PorousFlowBrineSaltCO2::thermophysicalProperties(Real pressure,
     }
   }
 
-  // set the solid/halite saturation (initialized to a small non-zero number)
-  solid.saturation = _saturationSOLID;
+  // set the solid/halite saturation
+  solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
   // Liquid saturations can now be set
   liquid.saturation = 1.0 - gas.saturation - solid.saturation;
 
@@ -178,65 +180,88 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
   DualReal Xco2 = 0.0;
   DualReal Yh2o = 0.0;
   DualReal Yco2 = 0.0;
-  DualReal Ynacl;  //halite in gas phase
-  DualReal Snacl;  //halite in solid phase
-
+  DualReal Ynacl = 0.0;  //halite in gas phase
+  DualReal Snacl = 0.0;  //halite in solid phase
+  DualReal Xh2o = 0.0;
  // halite solubility in liquid phase
-  const DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
+  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
   _console << "XEQ " << XEQ << std::endl;
 
-  // If the amount of CO2 is less than the smallest solubility,then all CO2 will
-  // be dissolved/dissapear, and the equilibrium mass fractions do not need to be computed
-  if (Z < _Zmin)
+/*
+/Check the salt composition in the TWOPHASE state. That is, whether the amount
+/ of salt (or salt mass fraction) in the TWOPHASE is less than its concentration
+/ or solubility limit even after evaporation and precipitation of brine.
+*/
+if (Xnacl < XEQ)
+  {
+  /*
+  / If true, the amount of salt present is not enough to change the TWOPHASE state.
+  / TWOPHASE state is still liquid & gas (i.e., Brine-CO2). Proceed to check the
+  / Co2 composition in the liquid phase.
+  /
+  / If the amount of CO2 is less than the smallest solubility,then all CO2 will be
+  / dissolved/dissapear, and the equilibrium mass fractions do not need to be computed
+  */
+     if (Z < _Zmin)
   // note: Zmin is minimum amount of co2 that could exist in the gas phase. Hence,
   // the above info means that if CO2 is less than the smallest amount set, then there
   // is no Co2 in the gas phase and all CO2 is concentrated in the liquid phase.
-  // Therefore, there is no multiphase.
-  {
-    phase_state = FluidStatePhaseEnum::LIQUID;
-  }
-  else if (Xnacl > XEQ)
-     {
-  // the amount of halite in the liquid phase is greater than or above its solubility/concentration
-  // (limit) due to high amount of water evaporating from the liquid phase into the gas phase .
-  // Gas phase is fully developed while liquid phase dissapears
-       phase_state = FluidStatePhaseEnum::GAS;
-     }
-  else
-  {
- // Equilibrium mass fraction of CO2 in liquid (Yco2) and H2O in gas phases (Xh20) are computed here.
- //note: Also, the contribution of salt in both liquid and gas is now included, i.e., Xnacl and Ynacl
-    equilibriumMassFractions(pressure, temperature, Xnacl, Xco2, Yh2o);
+  // Therefore, there is only liquid phase and no TWOPHASE.
+    {
+      phase_state = FluidStatePhaseEnum::LIQUID;
+    }
+     else
+   {
+  // There is TWOPHASE. The equilibrium mass fraction of CO2 in liquid (Yco2) and H2O
+  // in gas phases (Xh20) can now be computed. Note: There is NO contribution of salt
+  // in both liquid and gas phases (i.e., Xnacl and Ynacl is not accounted for)!
+    equilibriumMassFractions(pressure, temperature, Xnacl, Xco2, Yh2o,Ynacl,Snacl);
+    Yco2 = 1.0 - Yh2o;
+    Xh2o = 1.0 - Xco2;
+  // Determine which phases are present based on the value of z
+    phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
+   }
+ }
 
-    Yco2 = 1.0 - Yh2o - Ynacl ; // CO2 in liquid corrected with halite in the liquid phase
+else
+// Xnacl > or = XEQ. Hence, the amount of salt present after evaporation and
+// precipitation is enough to include the solid phase.
+{
+// Set Salt mass fraction equal to the solubility in the liquid phase to
+// maintain 3-phase state equilibrium.
 
-    // Determine which phases are present based on the value of z
-    phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state); // LATER
-  }
+const DualReal Xnacl = XEQ;
+
+// Equilibrium mass fraction of CO2 in liquid (Yco2) and H2O in gas phases (Xh20)
+// can now be computed. Note: Here,the contribution of salt in both liquid and gas
+// (i.e., Xnacl and Ynacl) is now included.
+equilibriumMassFractions(pressure, temperature, Xnacl, Xco2, Yh2o,Ynacl,Snacl);
+
+Yco2 = 1.0 - Yh2o - Ynacl; // CO2 in gas phase corrected with halite in the gas phase
+Xh2o = 1.0 - Xco2 - Xnacl; // h2o in liquid corrected with halite in the liquid phase
+// Determine which phases are present based on the value of z
+phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
+ }
 
   // The equilibrium mass fractions calculated above are only correct in the two phase
   // state. If only liquid or gas phases are present, the mass fractions are given by
   // the total mass fraction z which includes the salt/halite mass fraction too
 
-  DualReal Xh2o = 0.0;
+//  DualReal Xh2o = 0.0;
 
   switch (phase_state)
   {
     case FluidStatePhaseEnum::LIQUID:
     {
-    DualReal Xnacl;
-    DualReal Ynacl;
-    DualReal Snacl;
+  //  DualReal Xnacl;
+// note: the total mass fraction of 'gas', Z, assigned to the liquid phase is taken
+// by co2 (i.e., Xco2). The mass fraction of h20 left in the liquid phase (i.e., Xh20)
+// is 1-Z. Salt in the liquid phase (Xnacl) is already initialized. The rest of the
+// phases do not exist in this pure liquid phase case.
         Xco2 = Z;
         Yco2 = 0.0;
-// note: the total mass fraction of 'gas', Z, assigned is taken by co2 in the liquid phase
-// since solid phase is included, the mass fraction of h20 and halite that is
-// left after the entire gas phase is taken by co2 should be shared among both h2o and halite:
-        Xh2o = (1.0 - Z)/2.0;
+        Xh2o = 1.0 - Z;    //1.0 - Z; - Xnacl
         Yh2o = 0.0;
-        Xnacl = (1.0 - Z)/2.0;
-        Ynacl = 0.0;
-        Snacl = 0.0;
       Moose::derivInsert(Xco2.derivatives(), _pidx, 0.0);
       Moose::derivInsert(Xco2.derivatives(), _Tidx, 0.0);
       Moose::derivInsert(Xco2.derivatives(), _Xidx, 0.0);
@@ -258,8 +283,8 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
  // the rest should be shared.
  // note: Xh2o is not included here because it is already initialize to zero above.
       Yh2o = 1.0 - Z;
-      Xnacl = 0.0;
-      Ynacl = (1.0 - Z)/2;
+  //    Xnacl = 0.0;  // salt in liquid phase is already initialized.
+      Ynacl = 0.0;     //(1.0 - Z)/2; note: no salt in the gas phase for pure gas phase.
       Snacl = 0.0;
       Moose::derivInsert(Xco2.derivatives(), _pidx, 0.0);
       Moose::derivInsert(Xco2.derivatives(), _Tidx, 0.0);
@@ -271,24 +296,24 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
       break;
 
     }
-
     case FluidStatePhaseEnum::TWOPHASE:
     {
       // Keep equilibrium mass fractions
-      Xh2o = 1.0 - Xco2 - Xnacl; //  H2o in gas phase corrected with halite in the gas phase
+ // Xh2o = 1.0 - Xco2 - Xnacl; //  H2o in gas phase corrected with halite in the gas phase
+    Xh2o;
+    Yco2;
       break;
     }
   }
-
 /// Save the mass fractions in the FluidStateProperties object
 // Note: There is no mass fraction of h20 and co2 in the solid phase (i.e., Sh2o & SCo2)
 // because adsorption of gas and liquid onto the solid mass is negligible.
   liquid.mass_fraction[_aqueous_fluid_component] = Xh2o;
   liquid.mass_fraction[_gas_fluid_component] = Xco2;
-  liquid.mass_fraction[_aqueous_fluid_component] = Xnacl;
+  liquid.mass_fraction[_salt_component] = Xnacl;
   gas.mass_fraction[_aqueous_fluid_component] = Yh2o;
   gas.mass_fraction[_gas_fluid_component] = Yco2;
-  gas.mass_fraction[_gas_fluid_component] = Ynacl;
+  gas.mass_fraction[_salt_component] = Ynacl;
   solid.mass_fraction[_salt_component] = Snacl;
 }
 
@@ -318,9 +343,13 @@ PorousFlowBrineSaltCO2::gasProperties(const DualReal & pressure,
   // Vapor density, viscosity and enthalpy calculated using partial pressure
   // X1 * psat (Raoult's law)
   DualReal vapor_density, vapor_viscosity;
-
+ /*
   _water_fp.rho_mu_from_p_T((1.0 - Xco2) * psat, temperature, vapor_density, vapor_viscosity);
   DualReal vapor_enthalpy = _water_fp.h_from_p_T((1.0 - Xco2) * psat, temperature);
+*/
+ vapor_density =  _water_fp.rho_from_p_T((1.0 - Xco2) * psat, temperature);
+ vapor_viscosity = _water_fp.mu_from_p_T((1.0 - Xco2) * psat, temperature);
+ DualReal vapor_enthalpy = _water_fp.h_from_p_T((1.0 - Xco2) * psat, temperature);
 
   /// Save the values to the FluidStateProperties object. Note that derivatives wrt z are 0
   // Density is just the sum of individual component densities
@@ -447,11 +476,35 @@ PorousFlowBrineSaltCO2::saturationGAS(const DualReal & pressure,
   const DualReal vapor_mass_fraction = vaporMassFraction(Z, K0, K1);
 
   // The gas saturation in the two phase case
-  const DualReal saturation = vapor_mass_fraction * liquid_density /
+  const DualReal saturationGAS = vapor_mass_fraction * liquid_density /
                               (gas_density + vapor_mass_fraction * (liquid_density - gas_density));
 
-  return saturation;
+  return saturationGAS;
 }
+
+
+DualReal
+PorousFlowBrineSaltCO2::saturationSOLID(const DualReal & pressure,
+                                        const DualReal & temperature,
+                                        const DualReal & Xnacl,
+                                        std::vector<FluidStateProperties> & fsp) const
+{
+  // Solid phase saturation is computed from Xnacl, XEQ, brine and halite densities:
+  // compute the halite density
+  const DualReal halite_density = _brine_fp.halite_rho_from_p_T(pressure, temperature);
+
+  // compute brine/liquid density
+  const DualReal brine_density = _brine_fp.rho_from_p_T_X(pressure, temperature, Xnacl);
+
+  // compute the halite solubility in the liquid phase (XEQ)
+  const DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
+
+  // The solid saturation:
+  const DualReal saturationSOLID = (Xnacl - XEQ) * (brine_density/halite_density);
+
+  return saturationSOLID;
+}
+
 
 void
 PorousFlowBrineSaltCO2::MultiPhaseProperties(const DualReal & pressure,
@@ -475,9 +528,12 @@ PorousFlowBrineSaltCO2::MultiPhaseProperties(const DualReal & pressure,
   const DualReal gas_pressure = pressure - _pc.capillaryPressure(gas.saturation, qp);
   gasProperties(gas_pressure, temperature, fsp);
 
+  DualReal solid_saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
+  _console << "solid.saturation " << solid_saturation << std::endl;
+
   // The liquid pressure and properties can now be calculated
   // const DualReal liquid_pressure = pressure - _pc.capillaryPressure(1.0 - gas.saturation - solid.saturation, qp);
-  const DualReal liquid_pressure = pressure - _pc.capillaryPressure(1 - gas.saturation - _saturationSOLID, qp);
+  const DualReal liquid_pressure = pressure - _pc.capillaryPressure(1 - gas.saturation - solid_saturation, qp);
   liquidProperties(liquid_pressure, temperature, Xnacl, fsp);
 
   // The solid properties (note that the effect of liquid and gas adsorptions is neglected)
@@ -485,12 +541,15 @@ PorousFlowBrineSaltCO2::MultiPhaseProperties(const DualReal & pressure,
   solidProperties(pressure, temperature, fsp);
 }
 
+
 void
 PorousFlowBrineSaltCO2::equilibriumMassFractions(const DualReal & pressure,
                                                  const DualReal & temperature,
                                                  const DualReal & Xnacl,
                                                  DualReal & Xco2,
-                                                 DualReal & Yh2o) const
+                                                 DualReal & Yh2o,
+                                                 DualReal & Ynacl,
+                                                 DualReal & Snacl) const
 {
   // Mole fractions at equilibrium
   DualReal xco2, yh2o;
@@ -514,16 +573,18 @@ PorousFlowBrineSaltCO2::equilibriumMassFractions(const DualReal & pressure,
   // brine solution
 
   // halite solubility in liquid phase
-  const DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
+  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature, pressure);
   // halite solubility in water vapour (gas) phase
-  const DualReal XEQG = _brine_fp.haliteSolubilityGas(temperature, pressure);
+  DualReal XEQG = _brine_fp.haliteSolubilityGas(pressure);
 
   // The mass fraction of halite in the (water) vapor phase(Ynacl), computed from
   // the mass fraction in liquid phase (Xnacl).
   // (note: derivatives wrt to p, T, and X is not accounted for):
-  const DualReal Ynacl  =  Xnacl * (XEQG/XEQ);
+  //const DualReal
+  Ynacl  =  Xnacl * (XEQG/XEQ);
 
   // halite in the solid phase (Snacl)
   // note: since adsorption is not allowed, Sh2o and Sco2 equal 0 or neglected.
-  const DualReal Snacl  =  1 - Xnacl - Ynacl;
+  //const DualReal
+  Snacl  =  1.0;
 }
