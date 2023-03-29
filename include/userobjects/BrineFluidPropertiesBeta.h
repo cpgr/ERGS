@@ -38,9 +38,9 @@ public:
    * @param temperature temperature (K)
    * @return halite solubility (kg/kg)
    */
-  Real haliteSolubilityGas(Real temperature, Real pressure) const;
+  Real haliteSolubilityGas(/*Real temperature,*/ Real pressure) const;
 
-  DualReal haliteSolubilityGas(DualReal temperature, DualReal pressure) const;
+  DualReal haliteSolubilityGas(/*DualReal temperature,*/ DualReal pressure) const;
   /**
    *  Halite (solid NaCl) property, density (rho) and its derivative from
    *  Driesner and Heinrich (2007)

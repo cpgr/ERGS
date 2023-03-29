@@ -1,6 +1,6 @@
 #include "BrineFluidPropertiesBeta.h"
 
-registerMooseObject("FluidPropertiesApp", BrineFluidPropertiesBeta);
+registerMooseObject("ERGSApp", BrineFluidPropertiesBeta);
 
 InputParameters
 BrineFluidPropertiesBeta::validParams()
@@ -41,16 +41,16 @@ BrineFluidPropertiesBeta::haliteSolubilityWater(Real temperature, Real pressure)
   Real pbar = pressure * 1.0e-5;
   Real triplePbar = _p_triple * 1.0e-5;
 
-  Real T_hm = tripleTc + _alpha * (pressure -triplePbar);
+  Real T_hm = tripleTc + _alpha * (pbar - triplePbar);
 
  // Parameters from Driesner (2017):
   Real  e0,e1, e2, e3, e4, e5;
 
-  e0 = 0.0989944 + 3.30796 * 1e-6 * pbar - 4.71759 * 1e-10* pbar * pbar;
-  e1 = 0.00947257 - 8.66460 * 1e-6 * pbar + 1.69417 * 1e-9 * pbar * pbar;
-  e2 = 0.610863 - 1.51716 * 1e-5 * pbar + 1.19290 * 1e-8 * pbar * pbar;
-  e3 = -1.64994 + 2.03441 * 1e-4 * pbar - 6.46015 * 1e-8 * pbar * pbar;
-  e4 = 3.36474 - 1.54023 * 1e-4 * pbar + 8.17048 * 1e-8 * pbar * pbar;
+  e0 = 0.0989944 + (3.30796 * 1e-6 * pbar) - (4.71759 * 1e-10* pbar * pbar);
+  e1 = 0.00947257 - (8.66460 * 1e-6 * pbar) + (1.69417 * 1e-9 * pbar * pbar);
+  e2 = 0.610863 - (1.51716 * 1e-5 * pbar) + (1.19290 * 1e-8 * pbar * pbar);
+  e3 = -1.64994 + (2.03441 * 1e-4 * pbar) - (6.46015 * 1e-8 * pbar * pbar);
+  e4 = 3.36474 - (1.54023 * 1e-4 * pbar) + (8.17048 * 1e-8 * pbar * pbar);
   e5 = 1.0 - e0 - e1 - e2 - e3 - e4;
 
   std::vector<Real> E {e0, e1, e2, e3, e4, e5};
@@ -101,7 +101,7 @@ DualReal X_LSol = 0.0;
 
 
 Real
-BrineFluidPropertiesBeta::haliteSolubilityGas(Real /*temperature*/, Real pressure) const
+BrineFluidPropertiesBeta::haliteSolubilityGas(/* Real temperature,*/ Real pressure) const
 {
  // This correlation requires pressure in bar
   Real pbar = pressure * 1.0e-5;
@@ -111,10 +111,10 @@ BrineFluidPropertiesBeta::haliteSolubilityGas(Real /*temperature*/, Real pressur
 
 
 DualReal
-BrineFluidPropertiesBeta::haliteSolubilityGas(DualReal temperature, DualReal pressure) const
+BrineFluidPropertiesBeta::haliteSolubilityGas(/*DualReal temperature,*/ DualReal pressure) const
 {
   // This correlation requires temperature in Celcius
-  DualReal Tc = temperature - _T_c2k;
+//  DualReal Tc = temperature - _T_c2k;
  // This correlation requires pressure in bar
   DualReal pbar = pressure * 1.0e-5;
 
