@@ -12,7 +12,7 @@
 class PorousFlowBrineSaltCO2Test : public MooseObjectUnitTest
 {
 public:
-  PorousFlowBrineSaltCO2Test() :MooseObjectUnitTest("PorousFlowApp") { buildObjects(); }
+  PorousFlowBrineSaltCO2Test() :MooseObjectUnitTest("ERGSApp") { buildObjects(); }
 
 protected:
   void buildObjects()
@@ -36,6 +36,7 @@ protected:
     _co2_fp = &_fe_problem->getUserObject<SinglePhaseFluidProperties>("co2_fp");
 
     InputParameters uo_params = _factory.getValidParams("PorousFlowBrineSaltCO2");
+    uo_params.set<UserObjectName>("water_fp") = "water_fp";
     uo_params.set<UserObjectName>("brine_fp") = "brine_fp";
     uo_params.set<UserObjectName>("co2_fp") = "co2_fp";
     uo_params.set<UserObjectName>("capillary_pressure") = "pc";
@@ -48,12 +49,13 @@ protected:
     _Zidx = _fs->getZIndex();
     _Xidx = _fs->getXIndex();
   }
-
+ 
   const PorousFlowCapillaryPressureVG * _pc;
-  const PorousFlowBrineSaltCO2 * _fs;
-  const BrineFluidPropertiesBeta * _brine_fp;
   const Water97FluidProperties * _water_fp;
   const SinglePhaseFluidProperties * _co2_fp;
+  const PorousFlowBrineSaltCO2* _fs;
+  const BrineFluidPropertiesBeta* _brine_fp;
+
   unsigned int _pidx;
   unsigned int _Tidx;
   unsigned int _Zidx;
