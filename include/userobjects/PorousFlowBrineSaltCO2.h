@@ -169,6 +169,9 @@ public:
                           unsigned int qp,
                           std::vector<FluidStateProperties> & fsp) const;
 
+  unsigned int solidPhaseIndex() const { return _solid_phase_number; };
+
+  protected:
   /// Fluid properties UserObject for brine 
   const BrineFluidPropertiesBeta& _brine_fp;
 
@@ -181,6 +184,4 @@ public:
   /// Fluid properties UserObject for water (used to access Henry's law)
   const Water97FluidProperties& _water97_fp;
 
-  /// initial non-zero salt saturation
- /// const Real _saturationSOLID;
 };

@@ -16,8 +16,6 @@ PorousFlowBrineSaltCO2::validParams()
   params.addParam<unsigned int>("solid_phase_number", 2, "The phase number for salt");
   params.addRequiredParam<UserObjectName>("brine_fp", "The name of the user object for brine");
   params.addRequiredParam<UserObjectName>("water_fp", "The name of the user object for water");
-//  params.addParam<Real>("saturationSOLID", 0.01, "A small non-zero initial saturation"
-//                             "of halite in the multiphase system");
   params.addClassDescription("Fluid state class for brine, salt and Co2. Includes the"
                               "dissolution/precipitation of the solid-salt/halite");
   return params;
@@ -28,7 +26,6 @@ PorousFlowBrineSaltCO2::PorousFlowBrineSaltCO2(const InputParameters & parameter
     _brine_fp(getUserObject<BrineFluidPropertiesBeta>("brine_fp")),
     _water_fp(getUserObject<SinglePhaseFluidProperties>("water_fp")),
     _water97_fp(getUserObject<Water97FluidProperties>("water_fp")),
-  //  _saturationSOLID(getParam<Real>("saturationSOLID"),
     _solid_phase_number(getParam<unsigned int>("solid_phase_number"))
 {
   // Set the number of phases and components, and their indexes
@@ -260,7 +257,7 @@ phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
 // phases do not exist in this pure liquid phase case.
         Xco2 = Z;
         Yco2 = 0.0;
-        Xh2o = 1.0 - Z;    //1.0 - Z; - Xnacl
+        Xh2o = 1.0 - Z;
         Yh2o = 0.0;
       Moose::derivInsert(Xco2.derivatives(), _pidx, 0.0);
       Moose::derivInsert(Xco2.derivatives(), _Tidx, 0.0);
@@ -281,10 +278,10 @@ phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
       Yco2 = Z;
  // same here, total mass fraction of 'gas' assign is taken by co2 in the gas phase.
  // the rest should be shared.
- // note: Xh2o is not included here because it is already initialize to zero above.
+ // note: salt in liquid phase (Xnacl) is already initialized to zero.
       Yh2o = 1.0 - Z;
-  //    Xnacl = 0.0;  // salt in liquid phase is already initialized.
-      Ynacl = 0.0;     //(1.0 - Z)/2; note: no salt in the gas phase for pure gas phase.
+      Xh2o = 0.0;
+      Ynacl = 0.0;     //note: no salt in the (pure) gas phase.
       Snacl = 0.0;
       Moose::derivInsert(Xco2.derivatives(), _pidx, 0.0);
       Moose::derivInsert(Xco2.derivatives(), _Tidx, 0.0);
@@ -298,16 +295,15 @@ phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
     }
     case FluidStatePhaseEnum::TWOPHASE:
     {
-      // Keep equilibrium mass fractions
- // Xh2o = 1.0 - Xco2 - Xnacl; //  H2o in gas phase corrected with halite in the gas phase
+  // Keep equilibrium mass fractions
     Xh2o;
     Yco2;
       break;
     }
   }
-/// Save the mass fractions in the FluidStateProperties object
-// Note: There is no mass fraction of h20 and co2 in the solid phase (i.e., Sh2o & SCo2)
-// because adsorption of gas and liquid onto the solid mass is negligible.
+ /// Save the mass fractions in the FluidStateProperties object
+ // Note: There is no mass fraction of h20 and co2 in the solid phase (i.e., Sh2o & SCo2)
+ // because adsorption of gas and liquid onto the solid mass is negligible.
   liquid.mass_fraction[_aqueous_fluid_component] = Xh2o;
   liquid.mass_fraction[_gas_fluid_component] = Xco2;
   liquid.mass_fraction[_salt_component] = Xnacl;
@@ -585,6 +581,5 @@ PorousFlowBrineSaltCO2::equilibriumMassFractions(const DualReal & pressure,
 
   // halite in the solid phase (Snacl)
   // note: since adsorption is not allowed, Sh2o and Sco2 equal 0 or neglected.
-  //const DualReal
   Snacl  =  1.0;
 }
