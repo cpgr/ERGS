@@ -1,5 +1,3 @@
-#TOUGH2 EWASG example
-
 [Mesh]
 [gen]
   type = GeneratedMeshGenerator
@@ -11,6 +9,7 @@
   ymax = 1
   ny = 1
   []
+  coord_type = RZ
 []
 
 [FluidProperties]
@@ -42,7 +41,7 @@
     water_fp = water
     co2_fp = co2
     capillary_pressure = pc
-    saturationSOLID = 0
+  #  saturationSOLID = 0
   []
 []
 
@@ -59,9 +58,10 @@
     initial_condition = 0.01
   []
   [Xnacl]
-    initial_condition = 0.01 # Increase to 0.1 and won't work
+    initial_condition = 0.3 # Increase to 0.1 and won't work
   []
 []
+
 
 [AuxVariables]
   [temperature]
@@ -210,7 +210,5 @@
 
 [Outputs]
 []
-
-
 
 
