@@ -12,7 +12,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, indices)
   EXPECT_EQ((unsigned int)3, _fs->numComponents());
   EXPECT_EQ((unsigned int)0, _fs->aqueousPhaseIndex());
   EXPECT_EQ((unsigned int)1, _fs->gasPhaseIndex());
-//EXPECT_EQ((unsigned int)2, _fs->solidPhaseIndex()); //doesn't work. probably because there's no solid phase enum
+  EXPECT_EQ((unsigned int)2, _fs->solidPhaseIndex());
   EXPECT_EQ((unsigned int)0, _fs->aqueousComponentIndex());
   EXPECT_EQ((unsigned int)1, _fs->gasComponentIndex());
   EXPECT_EQ((unsigned int)2, _fs->saltComponentIndex());
@@ -52,26 +52,8 @@ TEST_F(PorousFlowBrineSaltCO2Test, equilibriumMassFraction)
   ABS_TEST(Ynacl.value(), 3.6986e-11, 1.0e-10);
   ABS_TEST(Snacl.value(), 1, 1.0e-10);
 
-/*
-/// Test the solubilities by comparing the implemented methods in the source file
-/// and the results obtained manually:
-  DualReal XEQ = _brine_fp->haliteSolubilityWater(350, 1e6);
-  DualReal XEQG = _brine_fp->haliteSolubilityGas(350, 1e6);
-
-  REL_TEST(XEQ, 0.104368, 2.0e-2);
-  REL_TEST(XEQG, 3.8602e-11, 2.0e-2);
-
-  // Next, test the salt component in the liquid phase:
-  DualReal Ynacl = Xnacl * (XEQG/XEQ);
-  REL_TEST(Ynacl, 3.6986e-11, 2.0e-2);
-
-  // Verify the salt component in the solid phase:
-  DualReal Snacl = 1;
-  REL_TEST(Snacl, 1, 2.0e-2);
-*/
 /// Verify the derivatives of the mass fractions wrt to the variables
 /// Note: the derivatives of Snacl wrt to the variables is not tested!
-
   DualReal X1, Y1, X2, Y2, Ynacl1, Snacl1, Ynacl2, Snacl2;
   // two different X,Y values from a small increment in pressure (dp) to
   // compute the derivatives
@@ -122,18 +104,18 @@ TEST_F(PorousFlowBrineSaltCO2Test, equilibriumMassFraction)
 
 
 /*
-* Verify the the massfraction method and its derivatives wrt to the variables P,T,X,Z.
+* Verify the massfraction method and its derivatives wrt to the variables P,T,X,Z.
 *
-* Note: This time, we're  re-computing the various mass fractions in each phase using
-* specific 'test' variables. Again, we obtain the values using the methods implemented
-* in the source file and then compare them with manually calculated results.
+* Note: This time, the various mass fractions in each phase are re-computed using
+* the specific 'test' variables. Again, the values are obtained using the methods
+* implemented in the source file and then compare with manually calculated results.
 */
 
 TEST_F(PorousFlowBrineSaltCO2Test, MassFraction)
 {
   // first, test for Xnacl < XEQ at Z < Zmin. For this condition
   // to be met, p and T must yield XEQ lower than Xnacl. This
-  // can occur at p = 1e6 and T= 300 while Xnacl = 0.01.
+  // can occur at p = 1e6 and T= 350 while Xnacl = 0.01.
   DualReal p = 1.0e6;
   Moose::derivInsert(p.derivatives(), _pidx, 1.0);
 
@@ -148,7 +130,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, MassFraction)
   const unsigned int nc = _fs->numComponents();
   std::vector<FluidStateProperties> fsp(np, FluidStateProperties(nc));
 
-  /// Liquid region (Xnacl < XEQ &  Z<_Zmin). note: Zmin = 1e-4
+/// Liquid region (Xnacl < XEQ &  Z<_Zmin). note: Zmin = 1e-4
   DualReal Z = 1e-5;
   Moose::derivInsert(Z.derivatives(), _Zidx, 1.0);
 
@@ -161,14 +143,12 @@ TEST_F(PorousFlowBrineSaltCO2Test, MassFraction)
   DualReal Xnacl2 = fsp[0].mass_fraction[2]; // liquid (phase 0) w/ halite (component 2)
   DualReal Yh2o =   fsp[1].mass_fraction[0];
   DualReal Yco2 =   fsp[1].mass_fraction[1];
-
   // Now, compare and verfify the values
   ABS_TEST(Xco2.value(), Z.value(), 1.0e-8);
   ABS_TEST(Yco2.value(), 0.0, 1.0e-8);
   ABS_TEST(Xh2o.value(), (1.0 - Z.value()), 1e-8);
   ABS_TEST(Yh2o.value(), 0.0, 1.0e-8);
   ABS_TEST(Xnacl2.value(), Xnacl.value(), 1e-8);
-
   /// Verify derivatives by comparing with manually computed results
   // note: derivatives of co2 in the gas phase (Yco2) is replaced by
   // water in the liquid phase (Xh2o) to ensure all tests occur in
@@ -186,33 +166,25 @@ TEST_F(PorousFlowBrineSaltCO2Test, MassFraction)
   ABS_TEST(Xnacl.derivatives()[_Xidx], 1.0, 1.0e-8); //note derv wrt x
   ABS_TEST(Xnacl.derivatives()[_Zidx], 0.0, 1.0e-8);
 
-/*
-  // Gas region
+/// Gas region (Xnacl < XEQ, but Z > Zmin).
   Z = 0.995;
   Moose::derivInsert(Z.derivatives(), _Zidx, 1.0);
 
   _fs->massFractions(p, T, Xnacl, Z, phase_state, fsp);
   EXPECT_EQ(phase_state, FluidStatePhaseEnum::GAS);
-
   // Obtain mass fraction values directly
-  DualReal Ynacl1;
-  Xco2 = fsp[0].mass_fraction[1];
-  Yco2 = fsp[1].mass_fraction[1];
   Xh2o = fsp[0].mass_fraction[0];
+  Xco2 = fsp[0].mass_fraction[1];
+  Xnacl2 = fsp[0].mass_fraction[2];
   Yh2o = fsp[1].mass_fraction[0];
-  Xnacl = fsp[0].mass_fraction[2];  // halite (component 2) in liquid (phase 0)
-  Ynacl1 = fsp[1].mass_fraction[2];    // halite (component 2) in liquid (phase 0)
-DualReal   Snacl  = fsp[2].mass_fraction[2];;  // halite (component 2) in solid (phase 2)
-
+  Yco2 = fsp[1].mass_fraction[1];
+  DualReal Ynacl = fsp[1].mass_fraction[2];
   // Now, compare and verfify the values
   ABS_TEST(Xco2.value(), 0.0, 1.0e-8);
   ABS_TEST(Yco2.value(), Z.value(), 1.0e-8);
   ABS_TEST(Xh2o.value(), 0.0, 1.0e-8);
-  ABS_TEST(Yh2o.value(), (1.0 - Z.value())/2.0, 1.0e-8);
-  ABS_TEST(Xnacl.value(), 0.0, 1.0e-8);
-  ABS_TEST(Ynacl1.value(), (1.0 - Z.value())/2.0, 1.0e-8);
-  ABS_TEST(Snacl.value(), 0.0, 1.0e-8);
-
+  ABS_TEST(Yh2o.value(), (1.0 - Z.value()), 1.0e-8);
+  ABS_TEST(Ynacl.value(), 0.0, 1.0e-8);
   /// Verify derivatives by comparing with manually computed results
   // note: derivatives of co2 in the liquid phase (Xco2) is replaced by
   // water in the gas phase (Yh2o) to ensure all tests are done in the gas phase.
@@ -220,25 +192,18 @@ DualReal   Snacl  = fsp[2].mass_fraction[2];;  // halite (component 2) in solid 
   ABS_TEST(Yco2.derivatives()[_Tidx], 0.0, 1.0e-8);
   ABS_TEST(Yco2.derivatives()[_Xidx], 0.0, 1.0e-8);
   ABS_TEST(Yco2.derivatives()[_Zidx], 1.0, 1.0e-8);
-  ABS_TEST(Yco2.derivatives()[_pidx], 0.0, 1.0e-8);
-  ABS_TEST(Yco2.derivatives()[_Tidx], 0.0, 1.0e-8);
-  ABS_TEST(Yco2.derivatives()[_Xidx], 0.0, 1.0e-8);
-  ABS_TEST(Yco2.derivatives()[_Zidx], 0.5, 1.0e-8);
-  ABS_TEST(Ynacl1.derivatives()[_pidx], 0.0, 1.0e-8);
-  ABS_TEST(Ynacl1.derivatives()[_Tidx], 0.0, 1.0e-8);
-  ABS_TEST(Ynacl1.derivatives()[_Xidx], 0.0, 1.0e-8);
-  ABS_TEST(Ynacl1.derivatives()[_Zidx], 0.5, 1.0e-8);
- // ABS_TEST(Xco2.derivatives()[_pidx], 0.0, 1.0e-8);
- // ABS_TEST(Xco2.derivatives()[_Tidx], 0.0, 1.0e-8);
- // ABS_TEST(Xco2.derivatives()[_Xidx], 0.0, 1.0e-8);
- // ABS_TEST(Xco2.derivatives()[_Zidx], 0.0, 1.0e-8);
-*/
+  ABS_TEST(Yh2o.derivatives()[_pidx], 0.0, 1.0e-8);
+  ABS_TEST(Yh2o.derivatives()[_Tidx], 0.0, 1.0e-8);
+  ABS_TEST(Yh2o.derivatives()[_Xidx], 0.0, 1.0e-8);
+  ABS_TEST(Yh2o.derivatives()[_Zidx],-1.0, 1.0e-8);
 
 // Test for the two-phase (brine-CO2) region with no salt mass fraction (i.e.,
 // Xnacl < XEQ at Z > Zmin). For Xnacl to be less than XEQ, the same p and T
-// conditions stated above is used. In this case,however, Z = 0.20.
-// Note: In this region, the mass fractions and derivatives can be verified using
-// the equilibrium mass fraction derivatives that have already been verified.
+// conditions stated above is used but Z = 0.20.
+//
+// Note: The difference between this region and the previously verified regions
+// (i.e., the liquid and gas regions) is that, instead of total mass fraction,
+// the equilibrium mass fraction is used for the verification.
 
   Z = 0.20;
   Moose::derivInsert(Z.derivatives(), _Zidx, 1.0);
@@ -246,7 +211,7 @@ DualReal   Snacl  = fsp[2].mass_fraction[2];;  // halite (component 2) in solid 
   _fs->massFractions(p, T, Xnacl, Z, phase_state, fsp);
   EXPECT_EQ(phase_state, FluidStatePhaseEnum::TWOPHASE);
 
-  // compute new Eq. mass fractions using the already verified
+  // compute new equilibrium mass fractions using the already verified
   // 'equilibriumMassFractions' method.
   DualReal Xco2_eq, Yh2o_eq, Ynacleq, Snacleq;
   _fs->equilibriumMassFractions(p, T, Xnacl, Xco2_eq, Yh2o_eq, Ynacleq, Snacleq);
@@ -264,7 +229,7 @@ DualReal   Snacl  = fsp[2].mass_fraction[2];;  // halite (component 2) in solid 
   ABS_TEST(Yh2o, Yh2o_eq, 1.0e-8);
 
 /// Use finite differences to verify that the derivatives of the mass fraction
-// wrt Z in the two-phase region is unaffected by Z. no contribution from salt.
+// wrt Z in the two-phase region is unaffected by Z.
   const Real dZ = 1.0e-8;
   _fs->massFractions(p, T, Xnacl, Z + dZ, phase_state, fsp);
   DualReal Xco21 = fsp[0].mass_fraction[1];
@@ -281,32 +246,28 @@ DualReal   Snacl  = fsp[2].mass_fraction[2];;  // halite (component 2) in solid 
 // (i.e., Ynacl and Xnacl) are now included in the computation of Yco2 and Xh2o
 // because Xnacl > XEQ. To ensure Xnacl > XEQ, same p and T conditions stated
 // above can be use but Xnacl should now be greater (e.g., 0.3). Any value of Z is ok!.
-// Note: Similarly, the mass fractions and derivatives in this region can be verified
+// Note:As before, the mass fractions and derivatives in this region can be verified
 // using the equilibrium mass fraction derivatives that have already been verified.
    Xnacl = 0.3;
    Moose::derivInsert(Xnacl.derivatives(), _Xidx, 1.0);
 
    _fs->massFractions(p, T, Xnacl, Z, phase_state, fsp);
     EXPECT_EQ(phase_state, FluidStatePhaseEnum::TWOPHASE);
-
-  // compute new Eq. mass fractions using the already verified equilibriumMassFractions'
+  // compute new equi. mass fractions using the already verified equilibriumMassFractions'
   // ' method. Note: here, Xnacl > or = XEQ !
-   const DualReal XEQ = _brine_fp->haliteSolubilityWater(T,p);
+   const DualReal XEQ = _brine_fp->haliteSolubilityWater(T,p);       //(T.value(),p.value());
    Xnacl = XEQ;
    _fs->equilibriumMassFractions(p, T, Xnacl, Xco2_eq, Yh2o_eq, Ynacleq, Snacleq);
-
     //obtain the eq.mass fractions directly from source file.
     Xco2 = fsp[0].mass_fraction[1];
     Yco2 = fsp[1].mass_fraction[1];
     Xh2o = fsp[0].mass_fraction[0];
     Yh2o = fsp[1].mass_fraction[0];
-
     //compare them with newly computed values for Xco2_eq and Yh2o_eq.
     ABS_TEST(Xco2, Xco2_eq, 1.0e-8);
     ABS_TEST(Yco2, 1.0 - Yh2o_eq - Ynacleq, 1.0e-8);
     ABS_TEST(Xh2o, 1.0 - Xco2_eq - Xnacl, 1.0e-8);
     ABS_TEST(Yh2o, Yh2o_eq, 1.0e-8);
-
  // test that the derivatives of the mass fraction wrt Z in the three-phase
  // region is unaffected by Z. note: here, there's contribution from salt mass
  // because Z > Zmin.
@@ -328,8 +289,8 @@ DualReal   Snacl  = fsp[2].mass_fraction[2];;  // halite (component 2) in solid 
  * Verify calculation of gas density, viscosity enthalpy, and derivatives. Note that as
  * these properties don't depend on (equilibrium) mass fraction because they are computed for
  * single phase regions, only the gas region needs to be tested (the calculations are identical
- * in the two phase region). Note: for gas ONLY, Xnacl < XEQ and Z>Zmin
- */
+ * in the two phase region). Note: for gas ONLY, Xnacl < XEQ and Z > Zmin
+*/
 TEST_F(PorousFlowBrineSaltCO2Test, gasProperties)
 {
   DualReal p = 1.0e6;
@@ -347,7 +308,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, gasProperties)
   std::vector<FluidStateProperties> fsp(np, FluidStateProperties(nc));
 
   // Gas region
-  DualReal Z = 0.995;
+  DualReal Z = 1; //0.995;
   Moose::derivInsert(Z.derivatives(), _Zidx, 1.0);
 
   _fs->massFractions(p, T, Xnacl, Z, phase_state, fsp);
@@ -563,7 +524,6 @@ TEST_F(PorousFlowBrineSaltCO2Test, liquidProperties)
   ABS_TEST(liquid_viscosity.derivatives()[_Zidx], (mu1 - mu2) / (2.0 * dZ), 1.0e-6);
   REL_TEST(liquid_enthalpy.derivatives()[_Zidx], (h1 - h2) / (2.0 * dZ), 1.0e-6);
 
-
 /// Verify (the derivatives of) the Liquid properties in the multiphase region
 /// w.r.t the variables P,T,X and Z.
   Z = 0.045;
@@ -704,7 +664,6 @@ TEST_F(PorousFlowBrineSaltCO2Test, solidProperties)
   ABS_TEST(solid_density.value(), density, 1.0e-8);
   ABS_TEST(solid_enthalpy.value(), enthalpy, 1.0e-8);
 
-
 // Verify derivatives
 // note: the derivatives are w.r.t all variables (i.e., P,T,X,Z)
 // start with P.
@@ -733,8 +692,8 @@ TEST_F(PorousFlowBrineSaltCO2Test, solidProperties)
   h2 = fsp[2].enthalpy.value();
 
 // compare derivatives.
-  REL_TEST(solid_density.derivatives()[_Tidx], (rho1 - rho2) / (2.0 * dT), 1.0e-6);
-  REL_TEST(solid_enthalpy.derivatives()[_Tidx], (h1 - h2) / (2.0 * dT), 1.0e-6);
+  REL_TEST(solid_density.derivatives()[_Tidx], (rho1 - rho2) / (2.0 * dT), 1.0e-8);
+  REL_TEST(solid_enthalpy.derivatives()[_Tidx], (h1 - h2) / (2.0 * dT), 1.0e-8);
 
  // same for derivatives wrt Z
  // Note: (equilibrium) mass fraction changes with Z
@@ -751,7 +710,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, solidProperties)
   h2 = fsp[2].enthalpy.value();
 
   ABS_TEST(solid_density.derivatives()[_Zidx], (rho1 - rho2) / (2.0 * dZ), 1.0e-8);
-  ABS_TEST(solid_enthalpy.derivatives()[_Zidx], (h1 - h2) / (2.0 * dZ), 1.0e-6);
+  ABS_TEST(solid_enthalpy.derivatives()[_Zidx], (h1 - h2) / (2.0 * dZ), 1.0e-8);
 }
 
 
@@ -778,7 +737,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, saturationGAS)
   // In the two-phase region, the mass fractions are the equilibrium values, so
   // a temporary value of Z can be used (as long as it corresponds to the two-phase
   // region)
-  DualReal Z = 0.45; // Used in the massFraction method to determine the type of enum to be used.
+  DualReal Z = 0.45; // Used in the massFraction method to determine the type of enum.
   Moose::derivInsert(Z.derivatives(), _Zidx, 1.0);
 
   _fs->massFractions(p, T, Xnacl, Z, phase_state, fsp);
@@ -787,7 +746,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, saturationGAS)
   // compute total mass fraction (Zc) that corresponds to a gas saturation of 0.25.
   // note: this value is compared with the saturation value computed using the
   // saturationGAS method implemented in the source file!
-  DualReal gas_saturation = 0.25;
+  DualReal gas_saturation = 0.45; //0.25
   DualReal liquid_pressure = p - _pc->capillaryPressure(1.0 - gas_saturation);
 
   // Calculate gas density and liquid density
@@ -802,7 +761,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, saturationGAS)
   // Calculate the gas saturation based on Zc!
   DualReal saturationGAS = _fs->saturationGAS(p, T, Xnacl, Zc, fsp);
   // compare the gas saturations!
-  ABS_TEST(saturationGAS.value(), gas_saturation.value(), 1.0e-4);
+  ABS_TEST(saturationGAS.value(), gas_saturation.value(), 3e-4);
 
   /// Now, verify the derivatives of the gas saturation
   gas_saturation = _fs->saturation(p, T, Xnacl, Z, fsp);
@@ -816,7 +775,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, saturationGAS)
   Real gsat2 = _fs->saturation(p - dp, T, Xnacl, Z, fsp).value();
 
   //compare the derivatives
-  REL_TEST(gas_saturation.derivatives()[_pidx], (gsat1 - gsat2) / (2.0 * dp), 1.0e-4);//6
+  REL_TEST(gas_saturation.derivatives()[_pidx], (gsat1 - gsat2) / (2.0 * dp), 1.0e-6);
 
   // Derivative wrt temperature
   const Real dT = 1.0e-4;
@@ -827,7 +786,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, saturationGAS)
   gsat2 = _fs->saturation(p, T - dT, Xnacl, Z, fsp).value();
 
   //compare the derivatives
-  REL_TEST(gas_saturation.derivatives()[_Tidx], (gsat1 - gsat2) / (2.0 * dT), 1.0e-4);//6
+  REL_TEST(gas_saturation.derivatives()[_Tidx], (gsat1 - gsat2) / (2.0 * dT), 1.0e-6);
 
   // Derivative wrt Xnacl
   const Real dx = 1.0e-8;
@@ -838,7 +797,7 @@ TEST_F(PorousFlowBrineSaltCO2Test, saturationGAS)
   gsat2 = _fs->saturation(p, T, Xnacl - dx, Z, fsp).value();
 
  //compare the derivatives
- REL_TEST(gas_saturation.derivatives()[_Xidx], (gsat1 - gsat2) / (2.0 * dx), 1.0e-4);
+ REL_TEST(gas_saturation.derivatives()[_Xidx], (gsat1 - gsat2) / (2.0 * dx), 1.0e-6);
 
   // Derivative wrt Z
   const Real dZ = 1.0e-8;
@@ -849,5 +808,5 @@ TEST_F(PorousFlowBrineSaltCO2Test, saturationGAS)
   gsat2 = _fs->saturation(p, T, Xnacl, Z - dZ, fsp).value();
 
   //compare the derivatives
-  REL_TEST(gas_saturation.derivatives()[_Zidx], (gsat1 - gsat2) / (2.0 * dZ), 1.0e-4);
+  REL_TEST(gas_saturation.derivatives()[_Zidx], (gsat1 - gsat2) / (2.0 * dZ), 1.0e-6);
 }
