@@ -56,7 +56,7 @@ BrineFluidPropertiesBeta::haliteSolubilityWater(Real temperature, Real pressure)
   std::vector<Real> E {e0, e1, e2, e3, e4, e5};
 
 Real X_LSol = 0.0;
-  for (int i = 0; i < 7; i++)
+    for (unsigned int i = 0; i < E.size(); ++i)
      {
        X_LSol += E[i] * std::pow((Tc/T_hm),i);
      }
@@ -91,7 +91,8 @@ BrineFluidPropertiesBeta::haliteSolubilityWater(DualReal temperature, DualReal p
   std::vector<DualReal> E {e0, e1, e2, e3, e4, e5};
 
 DualReal X_LSol = 0.0;
-  for (int i = 0; i < 7; i++)
+
+  for (unsigned int i = 0; i < E.size(); ++i)
      {
        X_LSol += E[i] * std::pow((Tc/T_hm),i);
      }
