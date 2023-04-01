@@ -178,10 +178,9 @@ public:
   /// Fluid properties UserObject for water
   const SinglePhaseFluidProperties & _water_fp;
 
-  /// Solid phase index
-  const unsigned int _solid_phase_number;
-
   /// Fluid properties UserObject for water (used to access Henry's law)
   const Water97FluidProperties& _water97_fp;
 
+  /// Solid phase index
+  const unsigned int _solid_phase_number;
 };
