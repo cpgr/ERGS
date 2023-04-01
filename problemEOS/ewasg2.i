@@ -61,7 +61,7 @@
     initial_condition = 0.3
   []
   [temperature]
-    initial_condition = 100 
+    initial_condition = 175.55
   []
 []
 
@@ -124,7 +124,7 @@
 
 [Kernels]
   [mass0]
-    type = PorousFlowMassTimeDerivative
+    type = PorousFlowMassTimeDerivative  
     variable = pgas
     fluid_component = 0
   []
@@ -134,7 +134,7 @@
     fluid_component = 0
   []
   [mass1]
-    type = PorousFlowMassTimeDerivative
+    type = PorousFlowMassTimeDerivative  
     variable = zi
     fluid_component = 1
   []
@@ -144,7 +144,7 @@
     fluid_component = 1
   []
   [mass2]
-    type = PorousFlowMassTimeDerivative
+    type = PorousFlowMassTimeDerivative  
     variable = Xnacl
     fluid_component = 2
   []
@@ -154,7 +154,7 @@
     fluid_component = 2
   []
   [energy]
-    type = PorousFlowMassTimeDerivative          
+    type = PorousFlowEnergyTimeDerivative       
     variable = temperature
   []
   [heat_adv]
@@ -224,7 +224,7 @@
   [fluid_produce]   
     type = PorousFlowSquarePulsePointSource
     point = '5 -250 0'
-    mass_flux = -1.3e-4   # -65  #-0.033   # 
+    mass_flux = -1.3e-4   # -65  
     variable = pgas
   []
 []
@@ -303,7 +303,7 @@
   nl_max_its = 25
   l_max_its = 100
   dtmax = 1e5
-  nl_abs_tol = 1e-20
+  nl_abs_tol = 1e-10
   [TimeStepper]
     type = IterationAdaptiveDT
     dt = 100
