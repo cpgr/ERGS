@@ -180,7 +180,7 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
   DualReal Snacl = 0.0;  //halite in solid phase
   DualReal Xh2o = 0.0;
  // halite solubility in liquid phase
-  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature.value(),pressure.value());
+  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
 //  _console << "XEQ " << XEQ << std::endl;
 
 /*
@@ -289,8 +289,6 @@ phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
     case FluidStatePhaseEnum::TWOPHASE:
     {
   // Keep equilibrium mass fraction
-//    Xh2o;
-//    Yco2;
       break;
     }
   }
@@ -488,7 +486,7 @@ PorousFlowBrineSaltCO2::saturationSOLID(const DualReal & pressure,
   const DualReal brine_density = _brine_fp.rho_from_p_T_X(pressure, temperature, Xnacl);
 
   // compute the halite solubility in the liquid phase (XEQ)
-  const DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature.value(),pressure.value());
+  const DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
 
   // The solid saturation:
   const DualReal saturationSOLID = (Xnacl - XEQ) * (brine_density/halite_density);
@@ -564,9 +562,9 @@ PorousFlowBrineSaltCO2::equilibriumMassFractions(const DualReal & pressure,
   // brine solution
 
   // halite solubility in liquid phase
-  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature.value(), pressure.value());
+  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature, pressure);
   // halite solubility in water vapour (gas) phase
-  DualReal XEQG = _brine_fp.haliteSolubilityGas(pressure.value());
+  DualReal XEQG = _brine_fp.haliteSolubilityGas(pressure);
 
   // The mass fraction of halite in the (water) vapor phase(Ynacl), computed from
   // the mass fraction in liquid phase (Xnacl).
