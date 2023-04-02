@@ -270,12 +270,11 @@ phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
       Xco2 = 0.0;
       Yco2 = Z;
  // same here, total mass fraction of 'gas' assign is taken by co2 in the gas phase.
- // the rest should be shared.
- // note: salt in liquid phase (Xnacl) is already initialized to zero.
+ // the rest is taken by water in gas phase.
       Yh2o = 1.0 - Z;
       Xh2o = 0.0;
       Ynacl = 0.0;     //note: no salt in the (pure) gas phase.
-      Snacl = 0.0;
+      Snacl = 0.0;     //salt in liquid phase (Xnacl) is already initialized to zero.
       Moose::derivInsert(Xco2.derivatives(), _pidx, 0.0);
       Moose::derivInsert(Xco2.derivatives(), _Tidx, 0.0);
       Moose::derivInsert(Xco2.derivatives(), _Xidx, 0.0);
@@ -289,6 +288,7 @@ phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
     case FluidStatePhaseEnum::TWOPHASE:
     {
   // Keep equilibrium mass fraction
+  //Xh2o = 1.0 - Xco2;
       break;
     }
   }
