@@ -179,67 +179,100 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
   DualReal Ynacl = 0.0;  //halite in gas phase
   DualReal Snacl = 0.0;  //halite in solid phase
   DualReal Xh2o = 0.0;
- // halite solubility in liquid phase
-  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
-//  _console << "XEQ " << XEQ << std::endl;
 
-/*
-/Check the salt composition in the TWOPHASE state. That is, whether the amount
-/ of salt (or salt mass fraction) in the TWOPHASE is less than its concentration
-/ or solubility limit even after evaporation and precipitation of brine.
-*/
-if (Xnacl < XEQ)
-  {
+ // halite solubility in liquid phase
+ DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
+ //  _console << "XEQ " << XEQ << std::endl;
+ const DualReal R = 1.0 - Z;
+ /*
+ /Check the salt composition in the TWOPHASE state. That is, whether the amount
+ / of salt (or salt mass fraction) in the TWOPHASE is less than its concentration
+ / or solubility limit even after evaporation and precipitation of brine.
+ */
+ if (Xnacl < XEQ)
+   {
   /*
   / If true, the amount of salt present is not enough to change the TWOPHASE state.
-  / TWOPHASE state is still liquid & gas (i.e., Brine-CO2). Proceed to check the
-  / Co2 composition in the liquid phase.
+  / TWOPHASE state is still liquid & gas (i.e., Brine-co2). Proceed to check the
+  / whether only liquid brine or gaseous co2 exists.
   /
-  / If the amount of CO2 is less than the smallest solubility,then all CO2 will be
-  / dissolved/dissapear, and the equilibrium mass fractions do not need to be computed
+  / check if the total pressure in the system is greater than the boiling
+  / pressure. If true, boiling does not start and there is no gas phase.
+  / ONlY liquid phase exist. Note: boiling pressure is the pressure exerted by
+  / the gas phase due when boiling starts.
   */
      if (Z < _Zmin)
-  // note: Zmin is minimum amount of co2 that could exist in the gas phase. Hence,
-  // the above info means that if CO2 is less than the smallest amount set, then there
-  // is no Co2 in the gas phase and all CO2 is concentrated in the liquid phase.
-  // Therefore, there is only liquid phase and no TWOPHASE.
+   // only liquid phase exist.
     {
       phase_state = FluidStatePhaseEnum::LIQUID;
     }
+  // if false, probably there exist either gas or both liquid and gas. check the
+  // brine vapor pressure against the steam (i.e., water vapour) pressure. if the
+  // former is greater, there is no liquid. only gas phase:
+     else if (Z > R)
+   {
+     // only gas phase exist.
+       phase_state = FluidStatePhaseEnum::GAS;
+   }
      else
    {
-  // There is TWOPHASE. The equilibrium mass fraction of CO2 in liquid (Yco2) and H2O
+  // There is TWOPHASE. The equilibrium mass fraction of co2 in liquid (Yco2) and H2O
   // in gas phases (Xh20) can now be computed. Note: There is NO contribution of salt
   // in both liquid and gas phases (i.e., Xnacl and Ynacl is not accounted for)!
-    equilibriumMassFractions(pressure, temperature, Xnacl, Xco2, Yh2o,Ynacl,Snacl);
+  equilibriumMassFractions(pressure, temperature, Xnacl, Xco2, Yh2o,Ynacl,Snacl);
     Yco2 = 1.0 - Yh2o;
     Xh2o = 1.0 - Xco2;
-  // Determine which phases are present based on the value of z
+  // Determine which phases are present based on the value of Z
     phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
    }
  }
 else
 // Xnacl > or = XEQ. Hence, the amount of salt present after evaporation and
-// precipitation is enough to include the solid phase.
+// precipitation is enough to include the solid phase. The system could be
+// either TWO-PHASE (i.e., S+G, S+L) or THREE-PHASE (i.e., S+L+G)
 {
-// Set Salt mass fraction equal to the solid phase saturation to
-// maintain 3-phase state equilibrium.
-solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
-const DualReal Xnacl = solid.saturation;
-// const DualReal Xnacl = XEQ;
-//_console << "solid.saturation = " << solid.saturation << std::endl;
-//_console << "Xnacl = " << Xnacl << std::endl;
+  // Set Salt mass fraction equal to the solid phase saturation to
+  // maintain the presence of salt.
+  //solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
+  //const DualReal Xnacl = solid.saturation;
+  //_console << "solid.saturation = " << solid.saturation << std::endl;
+  //_console << "Xnacl = " << Xnacl << std::endl;
 
-// Equilibrium mass fraction of CO2 in liquid (Yco2) and H2O in gas phases (Xh20)
-// can now be computed. Note: Here,the contribution of salt in both liquid and gas
-// (i.e., Xnacl and Ynacl) is now included.
-equilibriumMassFractions(pressure, temperature, Xnacl, Xco2, Yh2o,Ynacl,Snacl);
-
-Yco2 = 1.0 - Yh2o - Ynacl; // CO2 in gas phase corrected with halite in the gas phase
-Xh2o = 1.0 - Xco2 - Xnacl; // h2o in liquid corrected with halite in the liquid phase
-// Determine which phases are present based on the value of z
-phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
- }
+  /** Check whether there is S+L using the persistent variable (Z)!**/
+   if (Z < _Zmin)
+   {
+  // The existing two-phases are solid and liquid. No Gas. Compute h2o in the
+  // liquid phase. Note: salt component (i.e. Xnacl) is accounted for and Snacl =1.
+  equilibriumMassFractions(pressure, temperature, Xnacl, Xco2, Yh2o,Ynacl,Snacl);
+   Xh2o = 1.0 - Xco2 -  Xnacl;
+   // Determine which phases are present based on the value of z
+   // note: Snacl = 1 and since there is no co2 in the liquid phase, Sco2 = 0.
+   phaseState(Z.value(), Xco2.value(), 0.0, phase_state);
+   }
+   /** No S+l? Check for S+G **/
+   else if (Z > R)
+  {
+   // Only two-phase (i.e., solid and gas) exist. No liquid-phase. Use the
+   // equilibrium mass fraction to compute the co2 in the gas phase. Note: salt
+   // component (i.e., Ynacl) is account for  and Snacl is already initialize to 1.
+  equilibriumMassFractions(pressure, temperature, Xnacl, Xco2, Yh2o,Ynacl,Snacl);
+   Yco2 = 1.0 - Yh2o - Ynacl;
+   // Determine which phases are present based on the value of z
+   // note: Snacl = 1 and since there is no co2 in the solid phase, Sco2 = 0.
+   phaseState(Z.value(), 0.0, Yco2.value(), phase_state);
+   }
+    else
+  {
+  // Equilibrium mass fraction of co2 in liquid (Yco2) and h20 in gas phases (Xh20)
+  // can now be computed. Note: Here,the contribution of salt in both liquid and gas
+  // (i.e., Xnacl and Ynacl) is now included. Snacl is already initialize to 1.
+  equilibriumMassFractions(pressure, temperature, Xnacl,Xco2, Yh2o,Ynacl,Snacl);
+  Yco2 = 1.0 - Yh2o - Ynacl; // co2 in gas phase corrected with halite in the gas phase
+  Xh2o = 1.0 - Xco2 - Xnacl; // h2o in liquid corrected with halite in the liquid phase
+  // Determine which phases are present based on the value of z
+  phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
+  }
+}
   // The equilibrium mass fractions calculated above are only correct in the two phase
   // state. If only liquid or gas phases are present, the mass fractions are given by
   // the total mass fraction z which includes the salt/halite mass fraction too
@@ -293,12 +326,11 @@ phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
     case FluidStatePhaseEnum::TWOPHASE:
     {
   // Keep equilibrium mass fraction
-  //Xh2o = 1.0 - Xco2;
       break;
     }
   }
  /// Save the mass fractions in the FluidStateProperties object
- // Note: There is no mass fraction of h20 and co2 in the solid phase (i.e., Sh2o & SCo2)
+ // Note: There is no mass fraction of h20 and co2 in the solid phase (i.e., Sh2o & Sco2)
  // because adsorption of gas and liquid onto the solid mass is negligible.
   liquid.mass_fraction[_aqueous_fluid_component] = Xh2o;
   liquid.mass_fraction[_gas_fluid_component] = Xco2;
