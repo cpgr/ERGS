@@ -115,7 +115,7 @@ PorousFlowBrineSaltCO2::thermophysicalProperties(Real pressure,
       gas.saturation = 1.0;
 
       // Calculate gas properties
-      gasProperties(p, T, fsp);
+      gasProperties(p, T, X, fsp);
 
       break;
     }
@@ -222,9 +222,14 @@ else
 // Xnacl > or = XEQ. Hence, the amount of salt present after evaporation and
 // precipitation is enough to include the solid phase.
 {
-// Set Salt mass fraction equal to the solubility in the liquid phase to
+// Set Salt mass fraction equal to the solid phase saturation to
 // maintain 3-phase state equilibrium.
-const DualReal Xnacl = XEQ;
+solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
+const DualReal Xnacl = solid.saturation;
+// const DualReal Xnacl = XEQ;
+//_console << "solid.saturation = " << solid.saturation << std::endl;
+//_console << "Xnacl = " << Xnacl << std::endl;
+
 // Equilibrium mass fraction of CO2 in liquid (Yco2) and H2O in gas phases (Xh20)
 // can now be computed. Note: Here,the contribution of salt in both liquid and gas
 // (i.e., Xnacl and Ynacl) is now included.
@@ -307,6 +312,7 @@ phaseState(Z.value(), Xco2.value(), Yco2.value(), phase_state);
 void
 PorousFlowBrineSaltCO2::gasProperties(const DualReal & pressure,
                                       const DualReal & temperature,
+                                      const DualReal & Xnacl,
                                      std::vector<FluidStateProperties> & fsp) const
 {
   FluidStateProperties & liquid = fsp[_aqueous_phase_number];
@@ -316,7 +322,7 @@ PorousFlowBrineSaltCO2::gasProperties(const DualReal & pressure,
  /// note: since halite is purely solid, it's density and enthalpy does not
  /// affect the gas properties/behaviour.
 
-  const DualReal psat = _water_fp.vaporPressure(temperature);
+  const DualReal psat = _brine_fp.vaporPressure(temperature,Xnacl);
 
   const DualReal Yco2 = gas.mass_fraction[_gas_fluid_component];
   const DualReal Xco2 = liquid.mass_fraction[_gas_fluid_component];
@@ -335,6 +341,7 @@ PorousFlowBrineSaltCO2::gasProperties(const DualReal & pressure,
 
   _water_fp.rho_mu_from_p_T((1.0 - Xco2) * psat, temperature, vapor_density, vapor_viscosity);
   DualReal vapor_enthalpy = _water_fp.h_from_p_T((1.0 - Xco2) * psat, temperature);
+
 /*
  vapor_density =  _water_fp.rho_from_p_T((1.0 - Xco2) * psat, temperature);
  vapor_viscosity = _water_fp.mu_from_p_T((1.0 - Xco2) * psat, temperature);
@@ -478,6 +485,9 @@ PorousFlowBrineSaltCO2::saturationSOLID(const DualReal & pressure,
                                         const DualReal & Xnacl,
                                         std::vector<FluidStateProperties> & fsp) const
 {
+  auto & liquid = fsp[_aqueous_fluid_component];
+  FluidStateProperties & solid = fsp[_solid_phase_number];
+
   // Solid phase saturation is computed from Xnacl, XEQ, brine and halite densities:
   // compute the halite density
   const DualReal halite_density = _brine_fp.halite_rho_from_p_T(pressure, temperature);
@@ -485,11 +495,16 @@ PorousFlowBrineSaltCO2::saturationSOLID(const DualReal & pressure,
   // compute brine/liquid density
   const DualReal brine_density = _brine_fp.rho_from_p_T_X(pressure, temperature, Xnacl);
 
+  // Mass fraction of CO2 in liquid phase
+  // note: Xco2 is used to compute the saturationSOLID!
+  const DualReal Xco2 = liquid.mass_fraction[_gas_fluid_component];
+
   // compute the halite solubility in the liquid phase (XEQ)
   const DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
 
   // The solid saturation:
-  const DualReal saturationSOLID = (Xnacl - XEQ) * (brine_density/halite_density);
+  const DualReal saturationSOLID = ((Xnacl - XEQ) * brine_density * (1.0 - Xco2))/
+                                    ((halite_density)*(1.0 - Xnacl));
 
   return saturationSOLID;
 }
@@ -515,7 +530,7 @@ PorousFlowBrineSaltCO2::MultiPhaseProperties(const DualReal & pressure,
   // note: since the gas properties are corrected with the dissolved water vapor,
   // the pressure is also affected by the gas saturation:
   const DualReal gas_pressure = pressure - _pc.capillaryPressure(gas.saturation, qp);
-  gasProperties(gas_pressure, temperature, fsp);
+  gasProperties(gas_pressure, temperature, Xnacl, fsp);
 
   DualReal solid_saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
 //  _console << "solid.saturation " << solid_saturation << std::endl;

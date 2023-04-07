@@ -93,6 +93,7 @@ public:
    */
   void gasProperties(const DualReal & pressure,
                      const DualReal & temperature,
+                     const DualReal& Xnacl,
                      std::vector<FluidStateProperties> & fsp) const;
 
   /**
