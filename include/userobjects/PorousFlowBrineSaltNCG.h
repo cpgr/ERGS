@@ -107,9 +107,10 @@ public:
  */
   DualReal partialDensityNCG(const DualReal& temperature) const;
 
-  /**
-* Vapor Pressure Lowering (VPL) effect
-* From Garcia, Density of aqueous solutions of CO2, LBNL-49023 (2001)
+/**
+* Vapor Pressure Lowering (VPL) effect from Battistelli et al, 1997: A fluid property module for 
+* the TOUGH2 simulator for saline brines with non-condensible gas, Proc. Eighteenth Workshop
+* on Geothermal Reservoir Engineering (1993) Pg 457 eqn 35.
 *
 * @param temperature fluid temperature (K)
 * @return VPL factor (-)

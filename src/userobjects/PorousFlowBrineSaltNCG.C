@@ -183,33 +183,17 @@ PorousFlowBrineSaltNCG::massFractions(const DualReal & pressure,
   DualReal Snacl = 0.0;  //halite in solid phase
   DualReal Xh2o = 0.0;
 
-// compute the parameters that'll be use to check all the 6 phase-state
-// combinations. See Battistelli(1997), pg 443-445.
-equilibriumMassFractions(pressure, temperature, Xnacl, Z, Xncg, Yh2o,Ynacl,Snacl,fsp);
-  Yncg = 1.0 - Yh2o;
- // compute ncg partial pressure using Dalton's law:
-  const DualReal p3 = Yncg * pressure;
- // compute the saturated brine vapour pressure:
-  const DualReal psat = _brine_fp.vaporPressure(temperature,Xnacl);
-  // compute the boiling pressure:
-  const DualReal pboil = p3 + psat;
-  // obtain the partial pressure of steam
-  const DualReal pSteam = _water_fp.vaporPressure(temperature);
-  // compute the gas and solid saturations:
-  const DualReal GAS_sat = saturationGAS(pressure, temperature, Xnacl, Z, fsp);
-  const DualReal SOLID_sat = saturationSOLID(pressure, temperature, Xnacl, fsp);
-
-  // halite solubility in liquid phase
-  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
-  //  _console << "XEQ " << XEQ << std::endl;
-
-/*
-/Check the salt composition in the TWOPHASE state. That is, whether the amount
-/ of salt (or salt mass fraction) in the TWOPHASE is less than its concentration
-/ or solubility limit even after evaporation and precipitation of brine.
-*/
-if (Xnacl < XEQ)
-  {
+ // halite solubility in liquid phase
+ DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
+ //  _console << "XEQ " << XEQ << std::endl;
+ const DualReal R = 1.0 - Z;
+ /*
+ /Check the salt composition in the TWOPHASE state. That is, whether the amount
+ / of salt (or salt mass fraction) in the TWOPHASE is less than its concentration
+ / or solubility limit even after evaporation and precipitation of brine.
+ */
+ if (Xnacl < XEQ)
+   {
   /*
   / If true, the amount of salt present is not enough to change the TWOPHASE state.
   / TWOPHASE state is still liquid & gas (i.e., Brine-ncg). Proceed to check the
@@ -220,7 +204,7 @@ if (Xnacl < XEQ)
   / ONlY liquid phase exist. Note: boiling pressure is the pressure exerted by
   / the gas phase due when boiling starts.
   */
-     if (pressure > pboil)
+     if (Z < _Zmin)
    // only liquid phase exist.
     {
       phase_state = FluidStatePhaseEnum::LIQUID;
@@ -228,7 +212,7 @@ if (Xnacl < XEQ)
   // if false, probably there exist either gas or both liquid and gas. check the
   // brine vapor pressure against the steam (i.e., water vapour) pressure. if the
   // former is greater, there is no liquid. only gas phase:
-     else if (psat > pSteam)
+     else if (Z > R)
    {
      // only gas phase exist.
        phase_state = FluidStatePhaseEnum::GAS;
@@ -248,17 +232,28 @@ if (Xnacl < XEQ)
 else
 // Xnacl > or = XEQ. Hence, the amount of salt present after evaporation and
 // precipitation is enough to include the solid phase. The system could be
-// either two-phase (i.e., S+G, S+L) or three-phase (i.e., S+L+G)
+// either TWO-PHASE (i.e., S+G, S+L) or THREE-PHASE (i.e., S+L+G)
 {
   // Set Salt mass fraction equal to the solid phase saturation to
   // maintain the presence of salt.
-  solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
-  const DualReal Xnacl = solid.saturation;
+  //solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
+  //const DualReal Xnacl = solid.saturation;
   //_console << "solid.saturation = " << solid.saturation << std::endl;
   //_console << "Xnacl = " << Xnacl << std::endl;
 
-/** Check whether there is S+G using the saturations!**/
-   if (GAS_sat >= 1.0 - SOLID_sat)
+  /** Check whether there is S+L using the persistent variable (Z)!**/
+   if (Z < _Zmin)
+   {
+  // The existing two-phases are solid and liquid. No Gas. Compute h2o in the
+  // liquid phase. Note: salt component (i.e. Xnacl) is accounted for and Snacl =1.
+  equilibriumMassFractions(pressure, temperature, Xnacl, Z, Xncg, Yh2o,Ynacl,Snacl,fsp);
+   Xh2o = 1.0 - Xncg -  Xnacl;
+   // Determine which phases are present based on the value of z
+   // note: Snacl = 1 and since there is no ncg in the liquid phase, Sncg = 0.
+   phaseState(Z.value(), Xncg.value(), 0.0, phase_state);
+   }
+   /** No S+l? Check for S+G **/
+   else if (Z > R)
   {
    // Only two-phase (i.e., solid and gas) exist. No liquid-phase. Use the
    // equilibrium mass fraction to compute the ncg in the gas phase. Note: salt
@@ -269,17 +264,6 @@ else
    // note: Snacl = 1 and since there is no ncg in the solid phase, Sncg = 0.
    phaseState(Z.value(), 0.0, Yncg.value(), phase_state);
    }
-/** No S+G? Check for S+L **/
-    else if (GAS_sat <= 0.0)
-    {
-  // The existing two-phases are solid and liquid. No Gas. Compute h2o in the
-  // liquid phase. Note: salt component (i.e. Xnacl) is accounted for and Snacl =1.
-  equilibriumMassFractions(pressure, temperature, Xnacl, Z, Xncg, Yh2o,Ynacl,Snacl,fsp);
-    Xh2o = 1.0 - Xncg -  Xnacl;
-    // Determine which phases are present based on the value of z
-    // note: Snacl = 1 and since there is no ncg in the liquid phase, Sncg = 0.
-    phaseState(Z.value(), Xncg.value(), 0.0, phase_state);
-    }
     else
   {
   // Equilibrium mass fraction of ncg in liquid (Yncg) and h20 in gas phases (Xh20)
@@ -375,6 +359,7 @@ PorousFlowBrineSaltNCG::gasProperties(const DualReal & pressure,
  /// affect the gas properties/behaviour.
 
   const DualReal psat = _brine_fp.vaporPressure(temperature,Xnacl);
+// note: vapour pressure lowering effect (i.e.,  f_vpl * psat) not included yet.
 
   const DualReal Yncg = gas.mass_fraction[_gas_fluid_component];
   const DualReal Xncg = liquid.mass_fraction[_gas_fluid_component];
@@ -732,6 +717,7 @@ PorousFlowBrineSaltNCG::partialDensityNCG(const DualReal & temperature) const
 
   return 1.0e6 * _Mncg / V;
 }
+
 
 DualReal
 PorousFlowBrineSaltNCG::f_vpl(const DualReal & pressure,
