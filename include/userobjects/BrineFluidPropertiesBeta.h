@@ -63,6 +63,26 @@ public:
   virtual void
   halite_h_from_p_T(Real pressure, Real temperature, Real & h, Real & dh_dp, Real & dh_dT) const;
 
+
+  /**
+   * Conversion from mass fraction to molal concentration (molality). note: DualReal!
+   * @return molal concentration (mol/kg) 
+   */
+  DualReal massFractionToMolalConc(DualReal xnacl) const;
+
+  /**
+   * Brine vapour pressure (DualReal !)
+   * From Haas, Physical properties of the coexisting phases and thermochemical
+   * properties of the H2O component in boiling NaCl solutions, Geological Survey
+   * Bulletin, 1421-A (1976).
+   *
+   * @param temperature brine temperature (K)
+   * @param xnacl salt mass fraction (-)
+   * @return brine vapour pressure (Pa)
+   */
+  DualReal vaporPressure(DualReal temperature, DualReal xnacl) const;
+
+
 protected:
   // Parameter for Driesner
   Real _alpha;

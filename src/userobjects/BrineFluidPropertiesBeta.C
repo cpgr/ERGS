@@ -238,3 +238,31 @@ BrineFluidPropertiesBeta::halite_h_from_p_T(
   dh_dp = 44.14 * 1.0e-5;
   dh_dT = 8.7664e2 + 2.0 * 6.4139e-2 * Tc + 3.0 * 8.8101e-5 * Tc * Tc;
 }
+
+
+DualReal
+BrineFluidPropertiesBeta::massFractionToMolalConc(DualReal xnacl) const
+{
+  return xnacl / ((1.0 - xnacl) * _Mnacl);
+}
+
+
+DualReal
+BrineFluidPropertiesBeta::vaporPressure(DualReal temperature, DualReal xnacl) const
+{
+  // Correlation requires molal concentration (mol/kg)
+  DualReal mol = massFractionToMolalConc(xnacl);
+  DualReal mol2 = mol * mol;
+  DualReal mol3 = mol2 * mol;
+
+  DualReal a = 1.0 + 5.93582e-6 * mol - 5.19386e-5 * mol2 + 1.23156e-5 * mol3;
+  DualReal b = 1.1542e-6 * mol + 1.41254e-7 * mol2 - 1.92476e-8 * mol3 - 1.70717e-9 * mol * mol3 +
+           1.0539e-10 * mol2 * mol3;
+
+  // The temperature of pure water at the same pressure as the brine is given by
+  DualReal th20 = std::exp(std::log(temperature) / (a + b * temperature));
+
+  // The brine vapour pressure is then found by evaluating the saturation pressure for pure water
+  // using this effective temperature
+  return _water_fp->vaporPressure(th20);
+}
