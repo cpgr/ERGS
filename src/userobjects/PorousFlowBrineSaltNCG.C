@@ -192,7 +192,7 @@ PorousFlowBrineSaltNCG::massFractions(const DualReal & pressure,
  / of salt (or salt mass fraction) in the TWOPHASE is less than its concentration
  / or solubility limit even after evaporation and precipitation of brine.
  */
- if (Xnacl < XEQ)
+ if (Xnacl <= XEQ)
    {
   /*
   / If true, the amount of salt present is not enough to change the TWOPHASE state.
@@ -212,7 +212,7 @@ PorousFlowBrineSaltNCG::massFractions(const DualReal & pressure,
   // if false, probably there exist either gas or both liquid and gas. check the
   // brine vapor pressure against the steam (i.e., water vapour) pressure. if the
   // former is greater, there is no liquid. only gas phase:
-     else if (Z > R)
+     else if (Z >= R)
    {
      // only gas phase exist.
        phase_state = FluidStatePhaseEnum::GAS;
@@ -236,8 +236,8 @@ else
 {
   // Set Salt mass fraction equal to the solid phase saturation to
   // maintain the presence of salt.
-  //solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
-  //const DualReal Xnacl = solid.saturation;
+  solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
+  const DualReal Xnacl = solid.saturation;
   //_console << "solid.saturation = " << solid.saturation << std::endl;
   //_console << "Xnacl = " << Xnacl << std::endl;
 
@@ -253,7 +253,7 @@ else
    phaseState(Z.value(), Xncg.value(), 0.0, phase_state);
    }
    /** No S+l? Check for S+G **/
-   else if (Z > R)
+   else if (Z >= R)
   {
    // Only two-phase (i.e., solid and gas) exist. No liquid-phase. Use the
    // equilibrium mass fraction to compute the ncg in the gas phase. Note: salt
@@ -376,8 +376,8 @@ PorousFlowBrineSaltNCG::gasProperties(const DualReal & pressure,
 
   DualReal vapor_density, vapor_viscosity;
 
-  _water_fp.rho_mu_from_p_T((1.0 - Xncg) * psat, temperature, vapor_density, vapor_viscosity);
-  DualReal vapor_enthalpy = _water_fp.h_from_p_T((1.0 - Xncg) * psat, temperature);
+  _water_fp.rho_mu_from_p_T((1.0 - Xncg) * psat, temperature, vapor_density, vapor_viscosity); //
+  DualReal vapor_enthalpy = _water_fp.h_from_p_T((1.0 - Xncg) * psat, temperature); //
 
   /// Save the values to the FluidStateProperties object. Note that derivatives wrt z are 0
   // Density is just the sum of individual component densities
@@ -544,8 +544,9 @@ PorousFlowBrineSaltNCG::saturationSOLID(const DualReal & pressure,
   const DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
 
   // The solid saturation:
-  const DualReal saturationSOLID = ((Xnacl - XEQ) * brine_density * (1.0 - Xncg))/
-                                    ((halite_density)*(1.0 - Xnacl));
+  //const DualReal saturationSOLID = ((Xnacl - XEQ) * brine_density * (1.0 - Xncg))/
+  //                                  ((halite_density)*(1.0 - Xnacl));
+  const DualReal saturationSOLID = (Xnacl - XEQ) * (brine_density/halite_density);
 
   return saturationSOLID;
 }

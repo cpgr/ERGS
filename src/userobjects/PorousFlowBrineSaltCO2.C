@@ -181,7 +181,7 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
   DualReal Xh2o = 0.0;
 
  // halite solubility in liquid phase
- DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
+  DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
  //  _console << "XEQ " << XEQ << std::endl;
  const DualReal R = 1.0 - Z;
  /*
@@ -189,7 +189,7 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
  / of salt (or salt mass fraction) in the TWOPHASE is less than its concentration
  / or solubility limit even after evaporation and precipitation of brine.
  */
- if (Xnacl < XEQ)
+ if (Xnacl <= XEQ)
    {
   /*
   / If true, the amount of salt present is not enough to change the TWOPHASE state.
@@ -209,7 +209,7 @@ PorousFlowBrineSaltCO2::massFractions(const DualReal & pressure,
   // if false, probably there exist either gas or both liquid and gas. check the
   // brine vapor pressure against the steam (i.e., water vapour) pressure. if the
   // former is greater, there is no liquid. only gas phase:
-     else if (Z > R)
+     else if (Z >= R)
    {
      // only gas phase exist.
        phase_state = FluidStatePhaseEnum::GAS;
@@ -233,8 +233,8 @@ else
 {
   // Set Salt mass fraction equal to the solid phase saturation to
   // maintain the presence of salt.
-  //solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
-  //const DualReal Xnacl = solid.saturation;
+  solid.saturation = saturationSOLID(pressure, temperature, Xnacl, fsp);
+  const DualReal Xnacl = solid.saturation;
   //_console << "solid.saturation = " << solid.saturation << std::endl;
   //_console << "Xnacl = " << Xnacl << std::endl;
 
@@ -250,7 +250,7 @@ else
    phaseState(Z.value(), Xco2.value(), 0.0, phase_state);
    }
    /** No S+l? Check for S+G **/
-   else if (Z > R)
+   else if (Z >= R)
   {
    // Only two-phase (i.e., solid and gas) exist. No liquid-phase. Use the
    // equilibrium mass fraction to compute the co2 in the gas phase. Note: salt
@@ -535,9 +535,9 @@ PorousFlowBrineSaltCO2::saturationSOLID(const DualReal & pressure,
   const DualReal XEQ = _brine_fp.haliteSolubilityWater(temperature,pressure);
 
   // The solid saturation:
-  const DualReal saturationSOLID = ((Xnacl - XEQ) * brine_density * (1.0 - Xco2))/
-                                    ((halite_density)*(1.0 - Xnacl));
-
+//  const DualReal saturationSOLID = ((Xnacl - XEQ) * brine_density * (1.0 - Xco2))/
+//                                    ((halite_density)*(1.0 - Xnacl));
+  const DualReal saturationSOLID = (Xnacl - XEQ) * (brine_density/halite_density);
   return saturationSOLID;
 }
 
