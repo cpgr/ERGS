@@ -37,10 +37,10 @@
     pc = 0
   []
   [fs]
-    type = PorousFlowBrineSaltCO2
+   type = PorousFlowBrineSaltCO2
     brine_fp = brine
     water_fp = water
-    co2_fp = co2         
+    co2_fp = co2 
     capillary_pressure = pc
   []
 []
@@ -61,7 +61,7 @@
     initial_condition = 0.3
   []
   [temperature]
-    initial_condition = 175.55
+    initial_condition = 200 #275.55 #
   []
 []
 
@@ -182,12 +182,15 @@
     fluid_state = fs
   []
   [porosity]
-    type = PorousFlowPorosityConst
+  #  type = PorousFlowPorosityConst
+  #  porosity = 0.05
+    type = PorousFlowEffectivePorosityConst
+    solid_sat = ssolid
     porosity = 0.05
   []
   [permeability]
     type = PorousFlowPermeabilityConst
-    permeability = '50e-15 0 0   0 50e-15 0   0 0 50e-15'
+    permeability = '50e-10 0 0   0 50e-10 0   0 0 50e-10'
   []
   [relperm0]
     type = PorousFlowRelativePermeabilityCorey
@@ -224,7 +227,7 @@
   [fluid_produce]   
     type = PorousFlowSquarePulsePointSource
     point = '5 -250 0'
-    mass_flux = -1.3e-4   # -65  
+    mass_flux = -0.065              # note: 65kg/s 0.065m/s  1.307e-7
     variable = pgas
   []
 []
@@ -251,7 +254,7 @@
   [auxvars]
     type = ElementValueSampler
     sort_by = x
-    variable = 'sbrine sgas'
+    variable = 'sbrine sgas ssolid'
     execute_on = 'timestep_end'
     outputs = spatial
   []
@@ -277,10 +280,22 @@
     variable = sbrine
     execute_on = 'initial TIMESTEP_END'
   []
+  [ssolid]
+    type = PointValue
+    point =  '5 0 0'
+    variable = ssolid
+    execute_on = 'initial TIMESTEP_END'
+  []
   [Xnacl]
    type = PointValue
     point =  '5 0 0'
     variable = Xnacl
+    execute_on = 'initial TIMESTEP_END'
+  []
+  [Z]
+   type = PointValue
+    point =  '5 0 0'
+    variable = zi
     execute_on = 'initial TIMESTEP_END'
   []
 []
@@ -290,8 +305,8 @@
   [smp]
     type = SMP
     full = true
-#    petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -sub_pc_factor_shift_type'
-#    petsc_options_value = 'gmres bjacobi lu NONZERO'
+    petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -sub_pc_factor_shift_type'
+    petsc_options_value = 'gmres bjacobi lu NONZERO'
   []
 []
 
@@ -299,14 +314,14 @@
   type = Transient
   solve_type = NEWTON
   dt = 1
-  end_time = 1e3  #2e6
+  end_time = 2e6
   nl_max_its = 25
   l_max_its = 100
   dtmax = 1e5
-  nl_abs_tol = 1e-10
+  nl_abs_tol = 1e-6
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 100
+    dt = 1
   []
 []
 

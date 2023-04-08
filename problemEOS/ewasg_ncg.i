@@ -63,7 +63,7 @@
     initial_condition = 0.3
   []
   [temperature]
-    initial_condition = 175 #275.55 #
+    initial_condition = 270 #275.55 #
   []
 []
 
@@ -229,7 +229,7 @@
   [fluid_produce]   
     type = PorousFlowSquarePulsePointSource
     point = '5 -250 0'
-    mass_flux =-1.3e-4  # -65  # 
+    mass_flux = -0.065              # note: 65kg/s 0.065m/s  1.307e-7
     variable = pgas
   []
 []
@@ -238,7 +238,7 @@
 #    type = PorousFlowSink
 #    variable = pgas
 #    boundary = left
-#    flux_function = 65
+#    flux_function = 1.3e-4  #65
 #    fluid_phase = 0
 #    use_enthalpy = true
 #  []
@@ -320,7 +320,7 @@
   nl_max_its = 25
   l_max_its = 100
   dtmax = 1e5
-  nl_abs_tol = 1e-6
+  nl_abs_tol = 1e-10
   [TimeStepper]
     type = IterationAdaptiveDT
     dt = 1
