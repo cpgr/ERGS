@@ -24,49 +24,35 @@
 /******************************************************************************/
 
 
+#include "ergsEmbeddedOrthotropicFracturePermeability.h"
 
-#include "PFOrthoEM.h"
-
-registerMooseObject("PorousFlowApp", PFOrthoEM);
+registerMooseObject("PorousFlowApp", ergsEmbeddedOrthotropicFracturePermeability);
 
 InputParameters
-PFOrthoEM::validParams()
+ergsEmbeddedOrthotropicFracturePermeability::validParams()
 {
-  InputParameters params = PFEMBase::validParams();
+  InputParameters params = PorousFlowEmbeddedOrthotropicFracturePermeability::validParams();
   params.addClassDescription(
-    " This permeability material calculates the permeability tensor based on attributes of the "
-    " Orthotropic Embedded Fractures in Zill et. al.(2021): Hydro-mechanical continuum modelling of "
-    " fluid percolation through rock. The permeability is given as follows: "
-    " k = k_m*I +  [b_i/a_i * (\frac{b_{i}^2}{12} - k_m)*(I-M_i)]. where i=summation Over number of "
-    " fracture planes/surfaces. b is the fracture aperture given by: b_{i0} + /Delta{b_i} "
-    " /Delta{b_i} depends on the strain (/epsilon) as follows "
-    " /Delta{b_i} = a_i * 〈/epsilon :M_i - /epsilon_{0i}〉. Here, /epsilon_{0i} is a threshold strain of "
-    " the material in each of the fracture normal vector direction. /epsilon is total strain."
-    " a_i and b_i are fracture distance and fracture aperture respectively in each fracture "
-    " normal vector direction. K_m is the matrix/intrinsic permeability. I_{ij} is the identity tensor"
-    " and M_{ij} is a structure tensor given as n_i⊗n_i. n_i is a vector normal to each fracture plane.");
-
-    params.addRequiredParam<std::vector<double>>("alpha", "Mean fracture distance value in all 3 directions");
-    params.addRequiredParam<std::vector<double>>("eps0", "threshold strain");
-    params.addParam<RealTensorValue>("N",
-                           "normal vector wrt to fracture surface");
+  " Derived material class from ergsEmbeddedOrthotropicFracturePermeability that obtains the"
+  " initial fracture aperture as a coupled variable instead of an ordinary parameter. This initial"
+  " fracture aperture affects the permeability.");
+  params.addRequiredCoupledVar("Aperture", "The initial fracture aperture.");
   return params;
 }
 
-PFOrthoEM::PFOrthoEM(
+ergsEmbeddedOrthotropicFracturePermeability::ergsEmbeddedOrthotropicFracturePermeability(
     const InputParameters & parameters)
-  : PFEMBase(parameters),
-    _alpha(getParam<std::vector<double>>("alpha")),
-    _eps(getParam<std::vector<double>>("eps0")),
-    _NVec(parameters.isParamValid("N")
-                  ? getParam<RealTensorValue>("N")
-                  : RealTensorValue(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
+  : PorousFlowEmbeddedOrthotropicFracturePermeability(parameters),
+   _b0evol(coupledValue("Aperture"))
+// _b0evol(_nodal_material
+//            ? getMaterialPropertyOld<Real>("initial_fracture_aperture_nodal")
+//            : getMaterialPropertyOld<Real>("initial_fracture_aperture_qp"))
 {
 }
 
 
 void
-PFOrthoEM::computeQpProperties()
+ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
 {
 // This code block describes how the 'normal vector' (n) wrt each (of the 3) fracture face
 // should be computed. if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx),
@@ -153,7 +139,7 @@ PFOrthoEM::computeQpProperties()
    Real H_de = (_en[_qp] > _eps[i]) ? 1.0 : 0.0;
 
   // change in fracture aperture
-   Real b_f = _b0 + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
+   Real b_f = _b0evol[_qp] + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
 
    Real coeff = H_de * (b_f / _alpha[i]) * ((b_f * b_f / 12.0) - _km);
 
@@ -161,7 +147,7 @@ PFOrthoEM::computeQpProperties()
 
    auto _M = RankTwoTensor::selfOuterProduct(n_r);
 
-   
+
    _permeability_qp[_qp] += coeff * (I - _M);
  }
 }

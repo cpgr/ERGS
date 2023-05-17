@@ -43,12 +43,12 @@
  * I_{ij} is the identity tensor and M_{ij} is a structure tensor given as n⊗n. n is a vector normal
  * to the fracture.
  */
-class PFEMBase : public PorousFlowPermeabilityBase
+class PorousFlowEmbeddedFracturePermeability : public PorousFlowPermeabilityBase
 {
 public:
 	static InputParameters validParams();
 
-	PFEMBase(const InputParameters& parameters);
+	PorousFlowEmbeddedFracturePermeability(const InputParameters& parameters);
 
 protected:
 
