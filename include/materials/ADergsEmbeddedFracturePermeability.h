@@ -40,10 +40,11 @@ public:
 
 	ADergsEmbeddedFracturePermeability(const InputParameters& parameters);
 
-protected:
+	virtual void initQpStatefulProperties();
 
 	void computeQpProperties() override;
 
+protected:
 	/// get the AD of total stress tensor
 	const ADMaterialProperty<RankTwoTensor>& _stress;
 

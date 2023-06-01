@@ -38,11 +38,27 @@ public:
 
 	ergsEmbeddedOrthotropicFracturePermeability(const InputParameters& parameters);
 
+	virtual void initQpStatefulProperties();
+
+	void computeQpProperties() override;
+
 protected:
-	void computeQpProperties() ;
+	/// initial fracture aperture
+	MaterialProperty<Real>& _b;
+	const MaterialProperty<Real>& _b_old;
 
-	/// Initial fracture aperture obtained as a coupled variable
-	const VariableValue& _b0evol;
+	/// liquid saturation
+	const VariableValue& _satLIQUID;
 
-//	const MaterialProperty<Real>& _b0evol;
+	/// salt mass fraction
+	const VariableValue& _Xnacl;
+
+	/// salt solubility limit
+	const Real _XEQ;
+
+	/// mineral precipitation rate coefficient
+	const VariableValue& _rm;
+	//	const Real _rm;
+
+	const VariableValue& _Dt;
 };

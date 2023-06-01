@@ -37,8 +37,11 @@ public:
 
 	ADergsEmbeddedOrthotropicFracturePermeability(const InputParameters& parameters);
 
+	virtual void initQpStatefulProperties();
+
+	void computeQpProperties();
+
 protected:
-	void computeQpProperties() ;
 
 	/// get the AD of total stress tensor
 	const ADMaterialProperty<RankTwoTensor>& _stress;

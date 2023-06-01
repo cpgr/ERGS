@@ -39,12 +39,28 @@ public:
 
 	ergsEmbeddedFracturePermeability(const InputParameters& parameters);
 
-protected:
+	virtual void initQpStatefulProperties();
 
 	void computeQpProperties() override;
 
-/// Initial fracture aperture obtained as a coupled variable
-	const VariableValue& _b0evol;
+protected:
 
-//	const MaterialProperty<Real>& _b0evol;
+	/// initial fracture aperture
+	MaterialProperty<Real>& _b;
+	const MaterialProperty<Real>& _b_old;
+
+	/// liquid saturation
+	const VariableValue& _satLIQUID;
+
+	/// salt mass fraction
+	const VariableValue& _Xnacl;
+
+	/// salt solubility limit
+	const Real _XEQ;
+
+	/// mineral precipitation rate coefficient
+	const VariableValue& _rm;
+	//	const Real _rm;
+
+	const VariableValue& _Dt;
 };
