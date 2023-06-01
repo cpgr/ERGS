@@ -49,6 +49,13 @@ ADergsEmbeddedOrthotropicFracturePermeability::ADergsEmbeddedOrthotropicFracture
 
 
 void
+ADergsEmbeddedOrthotropicFracturePermeability::initQpStatefulProperties()
+{
+ _b[_qp] = 0.0;
+}
+
+
+void
 ADergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
 {
 // This code block describes how the 'normal vector' (n) wrt each (of the 3) fracture face
@@ -136,9 +143,12 @@ ADergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
    Real H_de = (_en[_qp] > _eps[i]) ? 1.0 : 0.0;
 
   // change in fracture aperture
-   Real b_f = _b0evol[_qp] + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
+   Real b_f = _b0 + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
 
-   Real coeff = H_de * (b_f / _alpha[i]) * ((b_f * b_f / 12.0) - _km);
+  // final aperture evolution, accounting for the halite dissolution
+   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _satLIQUID[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ)* /*_dt*/ _Dt[_qp] )));
+
+    Real coeff = H_de * (_b[_qp] / _alpha[i]) * ((_b[_qp] * _b[_qp] / 12.0) - _km);
 
    RankTwoTensor I = _identity_two;
 

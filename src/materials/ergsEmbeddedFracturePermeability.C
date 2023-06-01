@@ -33,19 +33,38 @@ ergsEmbeddedFracturePermeability::validParams()
 {
   InputParameters params = PorousFlowEmbeddedFracturePermeability::validParams();
   params.addClassDescription(
-    " Derived material class that obtains the initial fracture aperture as a coupled variable"
-    " instead of an ordinary parameter. This initial fracture aperture affects the permeability.");
-  params.addRequiredCoupledVar("Aperture", "The initial fracture aperture.");
+    " Derived material class from PorousFlowEmbeddedFracturePermeability that computes"
+    " the permeability using extra apertute change due to halite dissolution. This extra aperture"
+    " change is computed from various coupled variables.");
+    params.addRequiredCoupledVar("satLIQUID", "liquid saturation");
+    params.addRequiredCoupledVar("Xnacl", "Fluid temperature");
+    params.addRequiredCoupledVar("rm", "mineral precipitation coefficient");
+    params.addRequiredCoupledVar("Dt", "time step");
+    params.addParam<Real>("XEQ", 0.277, "solubility limit");
   return params;
 }
 
 ergsEmbeddedFracturePermeability::ergsEmbeddedFracturePermeability(const InputParameters & parameters)
   : PorousFlowEmbeddedFracturePermeability(parameters),
-    _b0evol(coupledValue("Aperture"))
-//    _b0evol(getMaterialProperty<Real>("initial_fracture_aperture"))
+      _b(_nodal_material
+                       ? declareProperty<Real>("initial_fracture_aperture_nodal")
+                       : declareProperty<Real>("initial_fracture_aperture_qp")),
+      _b_old(_nodal_material
+                       ? getMaterialPropertyOld<Real>("initial_fracture_aperture_nodal")
+                       : getMaterialPropertyOld<Real>("initial_fracture_aperture_qp")),
+      _satLIQUID(coupledValue("satLIQUID")),
+      _Xnacl(coupledValue("Xnacl")),
+      _rm(coupledValue("rm")),
+      _Dt(coupledValue("Dt")),
+      _XEQ(getParam<Real>("XEQ"))
 {
 }
 
+void
+ergsEmbeddedFracturePermeability::initQpStatefulProperties()
+{
+ _b[_qp] = 0.0;
+}
 
 void
 ergsEmbeddedFracturePermeability::computeQpProperties()
@@ -132,10 +151,13 @@ ergsEmbeddedFracturePermeability::computeQpProperties()
   // initial fracture aperture is sqrt(12 * k_m) in the literature
   //   Real _b0 = std::sqrt(12. * _km);
 
-  // change in fracture aperture
-     Real b_f = _b0evol[_qp] + (H_de * _a * (_en[_qp] - _e0));
+  // initial fracture aperture and aperture evolution due to strain.
+     Real b_f = _b0 + (H_de * _a * (_en[_qp] - _e0));
 
-     Real coeff =  H_de * (b_f / _a) * ((b_f * b_f / 12.0) - _km);
+  // final aperture evolution, accounting for the halite dissolution
+     _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _satLIQUID[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ)* /*_dt*/ _Dt[_qp] )));
+
+     Real coeff =  H_de * (_b[_qp] / _a) * ((_b[_qp] * _b[_qp] / 12.0) - _km);
 
      RankTwoTensor I = _identity_two;
      auto _M = RankTwoTensor::selfOuterProduct(n_r);

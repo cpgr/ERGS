@@ -48,6 +48,12 @@ ADergsEmbeddedFracturePermeability::ADergsEmbeddedFracturePermeability(const Inp
 
 
 void
+ADergsEmbeddedFracturePermeability::initQpStatefulProperties()
+{
+ _b[_qp] = 0.0;
+}
+
+void
 ADergsEmbeddedFracturePermeability::computeQpProperties()
 {
 // This code block describes how the 'normal vector' (n) wrt the fracture face should
@@ -132,10 +138,13 @@ ADergsEmbeddedFracturePermeability::computeQpProperties()
   // initial fracture aperture is sqrt(12 * k_m) in the literature
   //   Real _b0 = std::sqrt(12. * _km);
 
-  // change in fracture aperture
-     Real b_f = _b0evol[_qp] + (H_de * _a * (_en[_qp] - _e0));
+  // initial fracture aperture and aperture evolution due to strain.
+     Real b_f = _b0 + (H_de * _a * (_en[_qp] - _e0));
 
-     Real coeff =  H_de * (b_f / _a) * ((b_f * b_f / 12.0) - _km);
+  // final aperture evolution, accounting for the halite dissolution
+     _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _satLIQUID[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ) * /*_dt*/ _Dt[_qp] )));
+
+     Real coeff =  H_de * (_b[_qp] / _a) * ((_b[_qp] * _b[_qp] / 12.0) - _km);
 
      RankTwoTensor I = _identity_two;
      auto _M = RankTwoTensor::selfOuterProduct(n_r);
