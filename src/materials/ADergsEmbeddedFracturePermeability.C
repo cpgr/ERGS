@@ -23,85 +23,38 @@
 /*    along with this program.  If not, see <http://www.gnu.org/licenses/>    */
 /******************************************************************************/
 
-#include "PFEMBase.h"
+#include "ADergsEmbeddedFracturePermeability.h"
 
 
-registerMooseObject("PorousFlowApp", PFEMBase);
+registerMooseObject("ergsApp", ADergsEmbeddedFracturePermeability);
 
 InputParameters
-PFEMBase::validParams()
+ADergsEmbeddedFracturePermeability::validParams()
 {
-  InputParameters params = PorousFlowPermeabilityBase::validParams();
+  InputParameters params = ergsEmbeddedFracturePermeability::validParams();
   params.addClassDescription(
-    " This permeability material calculates the permeability tensor based on attributes of "
-    " Embedded Fractures. See Zill et. al.(2021): Hydro-mechanical continuum modelling of "
-    " fluid percolation through rock. The permeability is given as follows: "
-    " k = (k_m * I_{ij}) + (b/a*[(b^2/12 - k_m)]*(I-M_{ij})) "
-    " where b is the fracture aperture given by: b_0 + /Delta{b} "
-    " /Delta{b} depends on the strain (/epsilon) as follows "
-    " /Delta{b} = a * 〈/epsilon_n -/epsilon_0〉. Here, /epsilon_0 is a threshold strain "
-    " and /epsilon_n is the computed strain normal to the embedded fracture direction."
-    " a is mean fracture distance, b is fracture aperture, K_m is matrix/intrinsic permeability."
-    " I_{ij} is the identity tensor and M_{ij} is a structure tensor given as n⊗n. n is a vector normal"
-    " to the fracture.");
-    params.addRangeCheckedParam<Real>("a", 1,
-                                      "a > 0",
-                                      "Mean (scalar) fracture distance value");
-    params.addParam<Real>("e0", 1,"threshold strain");
-    params.addParam<Real>("b0", 0,"Initial fracture aperture");
-    params.addParam<Real>("km", 1, "matrix/intrinsic permeability");
-    params.addParam<Real>("fix_rad_xy", 0, "fix fracture rotation angle in radians");
-    params.addParam<Real>("fix_rad_yz", 0, "fix fracture rotation angle in radians");
-    params.addParam<RealVectorValue>("n",
-                           "normal vector wrt to fracture surface");
-    params.addParam<std::string>("base_name",
-                             "Optional parameter that allows the user to define "
-                             "multiple mechanics material systems on the same "
-                             "block, i.e. for multiple phases");
-    params.addParam<bool>("normal_vector_to_fracture_is_constant",
-                      true,
-                    "Whether the normal vector wrt to fracture surface is constant/known or not.");
-    params.addParam<bool>("Random_field",
-                      true,
-                      "Whether to use spatially random angle of rotation at each timestep or a fixed"
-                      "angle of rotation. Set true if you want random field, false otherwise");
-    params.addRequiredCoupledVar("rotation_angleXY", "The random rotation field_XY.");
-    params.addRequiredCoupledVar("rotation_angleYZ", "The random rotation field_YZ.");
+    " Alternative version of ergsEmbeddedFracturePermeability. This material obtains the"
+    " Automatic Differentiation of the total stress and total creep strain.");
   return params;
 }
 
-PFEMBase::PFEMBase(const InputParameters & parameters)
-  : PorousFlowPermeabilityBase(parameters),
-    _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
-    _a(getParam<Real>("a")),
-    _b0(getParam<Real>("b0")),
-    _e0(getParam<Real>("e0")),
-    _km(getParam<Real>("km")),
-    _n_const(parameters.get<bool>("normal_vector_to_fracture_is_constant")),
-    _Random_field(parameters.get<bool>("Random_field")),
-    _nVec(parameters.isParamValid("n") ? getParam<RealVectorValue>("n")
-                                       : RealVectorValue(1.0, 0.0, 0.0)),
-    _identity_two(RankTwoTensor::initIdentity),
-    _stress(getMaterialProperty<RankTwoTensor>(_base_name + "stress")),
-    _strain(getMaterialProperty<RankTwoTensor>("total_strain")),
-    _fix_rad_xy(getParam<Real>("fix_rad_xy")),
-    _fix_rad_yz(getParam<Real>("fix_rad_yz")),
-    _randm_rad_xy(_nodal_material
-                      ? declareProperty<Real>("random_xy_rotation_angle_for_each_element")
-                      : declareProperty<Real>("random_xy_rotation_angle_for_each_element_qp")),
-    _randm_rad_yz(_nodal_material
-                      ? declareProperty<Real>("random_yz_rotation_angle_for_each_element")
-                      : declareProperty<Real>("random_yz_rotation_angle_for_each_element_qp")),
-    _en(_nodal_material ? declareProperty<Real>("fracture_normal_strain_nodal")
-                        : declareProperty<Real>("fracture_normal_strain_qp")),
-    _rotXY(coupledValue("rotation_angleXY")),
-    _rotYZ(coupledValue("rotation_angleYZ"))
+
+ADergsEmbeddedFracturePermeability::ADergsEmbeddedFracturePermeability(const InputParameters & parameters)
+  : ergsEmbeddedFracturePermeability(parameters),
+   _stress(getADMaterialProperty<RankTwoTensor>(_base_name + "stress")),
+   _strain(getADMaterialProperty<RankTwoTensor>("creep_strain"))
 {
 }
 
 
 void
-PFEMBase::computeQpProperties()
+ADergsEmbeddedFracturePermeability::initQpStatefulProperties()
+{
+ _b[_qp] = 0.0;
+}
+
+void
+ADergsEmbeddedFracturePermeability::computeQpProperties()
 {
 // This code block describes how the 'normal vector' (n) wrt the fracture face should
 // be computed. if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx),
@@ -120,7 +73,7 @@ PFEMBase::computeQpProperties()
       {
         RankTwoTensor eigvec;
         std::vector<Real> eigvals;
-        _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
+        raw_value(_stress[_qp]).symmetricEigenvaluesEigenvectors(eigvals, eigvec);
         _n = eigvec.column(0);
       }
 
@@ -173,7 +126,7 @@ PFEMBase::computeQpProperties()
      RealVectorValue n_r = rotMat_xy * rotMat_yz * _n;
 
   // strain in the normal fracture direction
-    _en[_qp] = n_r *(_strain[_qp] * n_r);
+    _en[_qp] = n_r *(raw_value(_strain[_qp]) * n_r);
 
   // H_de is the heaviside function that implements the macaulay-bracket in Zill et al.
   // since _e0 is the initial/threshold strain state of the material, and strain is always
@@ -185,10 +138,13 @@ PFEMBase::computeQpProperties()
   // initial fracture aperture is sqrt(12 * k_m) in the literature
   //   Real _b0 = std::sqrt(12. * _km);
 
-  // change in fracture aperture
+  // initial fracture aperture and aperture evolution due to strain.
      Real b_f = _b0 + (H_de * _a * (_en[_qp] - _e0));
 
-     Real coeff =  H_de * (b_f / _a) * ((b_f * b_f / 12.0) - _km);
+  // final aperture evolution, accounting for the halite dissolution
+     _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _satLIQUID[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ) * /*_dt*/ _Dt[_qp] )));
+
+     Real coeff =  H_de * (_b[_qp] / _a) * ((_b[_qp] * _b[_qp] / 12.0) - _km);
 
      RankTwoTensor I = _identity_two;
      auto _M = RankTwoTensor::selfOuterProduct(n_r);

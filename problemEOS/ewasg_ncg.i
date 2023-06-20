@@ -28,7 +28,7 @@
 [UserObjects]
   [dictator]
     type = PorousFlowDictator
-    porous_flow_vars = 'pgas zi Xnacl temperature'       
+    porous_flow_vars = 'pgas Xnacl zi  temperature'        
     number_fluid_phases = 3
     number_fluid_components = 3
   []
@@ -37,11 +37,13 @@
     pc = 0
   []
   [fs]
-   type = PorousFlowBrineSaltCO2
+    type = PorousFlowBrineSaltNCG
     brine_fp = brine
     water_fp = water
     co2_fp = co2 
+    gas_fp = co2
     capillary_pressure = pc
+ #   solid_sat = 1
   []
 []
 
@@ -61,7 +63,7 @@
     initial_condition = 0.3
   []
   [temperature]
-    initial_condition = 200 #275.55 #
+    initial_condition = 270 #275.55 #
   []
 []
 
@@ -236,7 +238,7 @@
 #    type = PorousFlowSink
 #    variable = pgas
 #    boundary = left
-#    flux_function = 65
+#    flux_function = 1.3e-4  #65
 #    fluid_phase = 0
 #    use_enthalpy = true
 #  []
@@ -318,7 +320,7 @@
   nl_max_its = 25
   l_max_its = 100
   dtmax = 1e5
-  nl_abs_tol = 1e-6
+  nl_abs_tol = 1e-10
   [TimeStepper]
     type = IterationAdaptiveDT
     dt = 1

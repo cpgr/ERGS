@@ -25,48 +25,38 @@
 
 
 
-#include "PFOrthoEM.h"
+#include "ADergsEmbeddedOrthotropicFracturePermeability.h"
 
-registerMooseObject("PorousFlowApp", PFOrthoEM);
+registerMooseObject("PorousFlowApp", ADergsEmbeddedOrthotropicFracturePermeability);
 
 InputParameters
-PFOrthoEM::validParams()
+ADergsEmbeddedOrthotropicFracturePermeability::validParams()
 {
-  InputParameters params = PFEMBase::validParams();
+  InputParameters params = ergsEmbeddedOrthotropicFracturePermeability::validParams();
   params.addClassDescription(
-    " This permeability material calculates the permeability tensor based on attributes of the "
-    " Orthotropic Embedded Fractures in Zill et. al.(2021): Hydro-mechanical continuum modelling of "
-    " fluid percolation through rock. The permeability is given as follows: "
-    " k = k_m*I +  [b_i/a_i * (\frac{b_{i}^2}{12} - k_m)*(I-M_i)]. where i=summation Over number of "
-    " fracture planes/surfaces. b is the fracture aperture given by: b_{i0} + /Delta{b_i} "
-    " /Delta{b_i} depends on the strain (/epsilon) as follows "
-    " /Delta{b_i} = a_i * 〈/epsilon :M_i - /epsilon_{0i}〉. Here, /epsilon_{0i} is a threshold strain of "
-    " the material in each of the fracture normal vector direction. /epsilon is total strain."
-    " a_i and b_i are fracture distance and fracture aperture respectively in each fracture "
-    " normal vector direction. K_m is the matrix/intrinsic permeability. I_{ij} is the identity tensor"
-    " and M_{ij} is a structure tensor given as n_i⊗n_i. n_i is a vector normal to each fracture plane.");
-
-    params.addRequiredParam<std::vector<double>>("alpha", "Mean fracture distance value in all 3 directions");
-    params.addRequiredParam<std::vector<double>>("eps0", "threshold strain");
-    params.addParam<RealTensorValue>("N",
-                           "normal vector wrt to fracture surface");
+    "Alternative version of ergsEmbeddedOrthotropicFracturePermeability.This material obtains the"
+    "Automatic-Differentiation of the total stress and total creep strain.");
   return params;
 }
 
-PFOrthoEM::PFOrthoEM(
+ADergsEmbeddedOrthotropicFracturePermeability::ADergsEmbeddedOrthotropicFracturePermeability(
     const InputParameters & parameters)
-  : PFEMBase(parameters),
-    _alpha(getParam<std::vector<double>>("alpha")),
-    _eps(getParam<std::vector<double>>("eps0")),
-    _NVec(parameters.isParamValid("N")
-                  ? getParam<RealTensorValue>("N")
-                  : RealTensorValue(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
+  : ergsEmbeddedOrthotropicFracturePermeability(parameters),
+   _stress(getADMaterialProperty<RankTwoTensor>(_base_name + "stress")),
+   _strain(getADMaterialProperty<RankTwoTensor>("creep_strain"))
 {
 }
 
 
 void
-PFOrthoEM::computeQpProperties()
+ADergsEmbeddedOrthotropicFracturePermeability::initQpStatefulProperties()
+{
+ _b[_qp] = 0.0;
+}
+
+
+void
+ADergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
 {
 // This code block describes how the 'normal vector' (n) wrt each (of the 3) fracture face
 // should be computed. if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx),
@@ -87,7 +77,7 @@ PFOrthoEM::computeQpProperties()
       {
         RankTwoTensor eigvec;
         std::vector<Real> eigvals;
-        _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
+        raw_value(_stress[_qp]).symmetricEigenvaluesEigenvectors(eigvals, eigvec);
        _n = eigvec;
       }
 
@@ -134,7 +124,7 @@ PFOrthoEM::computeQpProperties()
 
  // The permeability is computed by first initializing it:
     RankTwoTensor I = _identity_two;
-    _permeability_qp[_qp] = _km*I;
+    _permeability_qp[_qp] = (_km*I);
 
  // The final/total permeability is the summation over the permeability due to each
  // individual strain corresponding to its unique rotated fracture normal vector.
@@ -147,7 +137,7 @@ PFOrthoEM::computeQpProperties()
    RealVectorValue n_r = rotMat_xy * rotMat_yz * _n.column(i);
 
   // strain due to each fracture normal vector direction
-    _en[_qp] = n_r*(_strain[_qp] * n_r);
+    _en[_qp] = n_r*(raw_value(_strain[_qp]) * n_r);
 
   // The heaviside function (H_de) that implements the macaulay-bracket in Zill et al.
    Real H_de = (_en[_qp] > _eps[i]) ? 1.0 : 0.0;
@@ -155,13 +145,16 @@ PFOrthoEM::computeQpProperties()
   // change in fracture aperture
    Real b_f = _b0 + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
 
-   Real coeff = H_de * (b_f / _alpha[i]) * ((b_f * b_f / 12.0) - _km);
+  // final aperture evolution, accounting for the halite dissolution
+   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _satLIQUID[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ)* /*_dt*/ _Dt[_qp] )));
+
+    Real coeff = H_de * (_b[_qp] / _alpha[i]) * ((_b[_qp] * _b[_qp] / 12.0) - _km);
 
    RankTwoTensor I = _identity_two;
 
    auto _M = RankTwoTensor::selfOuterProduct(n_r);
 
-   
+
    _permeability_qp[_qp] += coeff * (I - _M);
  }
 }

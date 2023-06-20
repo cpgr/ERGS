@@ -24,91 +24,32 @@
 /******************************************************************************/
 
 
-#include "ergsEmbeddedOrthotropicFracturePermeability.h"
 
-registerMooseObject("PorousFlowApp", ergsEmbeddedOrthotropicFracturePermeability);
+#include "ADPorousFlowEmbeddedOrthotropicFracturePermeability.h"
+
+registerMooseObject("PorousFlowApp", ADPorousFlowEmbeddedOrthotropicFracturePermeability);
 
 InputParameters
-ergsEmbeddedOrthotropicFracturePermeability::validParams()
+ADPorousFlowEmbeddedOrthotropicFracturePermeability::validParams()
 {
   InputParameters params = PorousFlowEmbeddedOrthotropicFracturePermeability::validParams();
   params.addClassDescription(
-  " Derived material class from PorousFlowEmbeddedOrthotropicFracturePermeability that computes"
-<<<<<<< HEAD
-  " the permeability using extra aperture change due to halite dissolution. This extra aperture"
-  " change is computed from various coupled variables.");
-  params.addParam<Real>("rho_w", 1250, "water density");
-  params.addParam<Real>("rho_m", 2170, "Density of halite mineral");
-/*
-  params.addParam<Real>("r_plus", 0.277, "Halite dissolution rate in an infinitely dilute solution");
-  params.addParam<Real>("R", 0.277, "Gas constant");
-  params.addParam<Real>("T", 0.277, "Absolute temperature");
-  params.addParam<Real>("sig", 0.277, "Temkin's average stoichiometric number");
-  params.addParam<Real>("K", 0.277, "Thermodynamic equilibrium constant");
-  params.addParam<Real>("gamma_Na", 0.277, "Thermodynamic equilibrium constant");
-  params.addParam<Real>("gamma_Cl", 0.277, "Thermodynamic equilibrium constant");
-  params.addParam<Real>("c_Na", 0.277, "concentration of Sodium ions");
-  params.addParam<Real>("c_Cl", 0.277, "concentration of Chloride");
-  params.addRequiredCoupledVar("aperture_old", "initial aperture field");
-*/
-  params.addRequiredCoupledVar("sw", "water saturation");
-=======
-  " the permeability using extra apertute change due to halite dissolution. This extra aperture"
-  " change is computed from various coupled variables.");
-  params.addRequiredCoupledVar("satLIQUID", "liquid saturation");
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
-  params.addRequiredCoupledVar("Xnacl", "Fluid temperature");
-  params.addRequiredCoupledVar("rm", "mineral precipitation coefficient");
-  params.addRequiredCoupledVar("Dt", "time step");
-  params.addParam<Real>("XEQ", 0.277, "solubility limit");
+    "Alternative version of PorousFlowEmbeddedOrthotropicFracturePermeability.This material obtains the"
+    "Automatic-Differentiation of the total stress and total creep strain.");
   return params;
 }
 
-ergsEmbeddedOrthotropicFracturePermeability::ergsEmbeddedOrthotropicFracturePermeability(
+ADPorousFlowEmbeddedOrthotropicFracturePermeability::ADPorousFlowEmbeddedOrthotropicFracturePermeability(
     const InputParameters & parameters)
   : PorousFlowEmbeddedOrthotropicFracturePermeability(parameters),
-      _b(_nodal_material
-                       ? declareProperty<Real>("initial_fracture_aperture_nodal")
-                       : declareProperty<Real>("initial_fracture_aperture_qp")),
-      _b_old(_nodal_material
-                       ? getMaterialPropertyOld<Real>("initial_fracture_aperture_nodal")
-                       : getMaterialPropertyOld<Real>("initial_fracture_aperture_qp")),
-<<<<<<< HEAD
-      _rho_w(getParam<Real>("rho_w")),
-      _rho_m(getParam<Real>("rho_m")),
-/*
-      _r_plus(getParam<Real>("r_plus")),
-      _R(getParam<Real>("R")),
-      _T(getParam<Real>("T")),
-      _sig(getParam<Real>("sig")),
-      _K(getParam<Real>("K")),
-      _gamma_Na(getParam<Real>("gamma_Na")),
-      _gamma_Cl(getParam<Real>("gamma_Cl")),
-      _c_Na(getParam<Real>("c_Na")),
-      _c_Cl(getParam<Real>("c_Cl")),
-      _aperture_old(coupledValue("aperture_old")),
-*/
-      _sw(coupledValue("sw")),
-=======
-      _satLIQUID(coupledValue("satLIQUID")),
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
-      _Xnacl(coupledValue("Xnacl")),
-      _rm(coupledValue("rm")),
-      _Dt(coupledValue("Dt")),
-      _XEQ(getParam<Real>("XEQ"))
+   _stress(getADMaterialProperty<RankTwoTensor>(_base_name + "stress")),
+   _strain(getADMaterialProperty<RankTwoTensor>("creep_strain"))
 {
 }
 
 
 void
-ergsEmbeddedOrthotropicFracturePermeability::initQpStatefulProperties()
-{
- _b[_qp] = 0.0;
-}
-
-
-void
-ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
+ADPorousFlowEmbeddedOrthotropicFracturePermeability::computeQpProperties()
 {
 // This code block describes how the 'normal vector' (n) wrt each (of the 3) fracture face
 // should be computed. if the components of n is known (e.g., sigma_xx, tau_xy and tau_zx),
@@ -129,7 +70,7 @@ ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
       {
         RankTwoTensor eigvec;
         std::vector<Real> eigvals;
-        _stress[_qp].symmetricEigenvaluesEigenvectors(eigvals, eigvec);
+        raw_value(_stress[_qp]).symmetricEigenvaluesEigenvectors(eigvals, eigvec);
        _n = eigvec;
       }
 
@@ -174,25 +115,9 @@ ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
     rotMat_yz(2, 1) = std::sin(_randm_rad_yz[_qp]);
     rotMat_yz(2, 2) = std::cos(_randm_rad_yz[_qp]);
 
-<<<<<<< HEAD
-/*
-  /* compute the halite dissolution rate according to Seales et. al. (2016)*/
-    // activity of the various ions (i.e., Na and Cl)
-//    Real a_Na = _gamma_Na * c_Na;
-//    Real a_Cl = _gamma_Cl * c_Cl;
-    // compute the reaction ionic activity product
-//    Real Q = a_Na + a_Cl;
-    // compute the chemical affinity
-//    Real A = -(_R *_T)*std::log(Q/_K);
-    //finally, the reaction rate
-//    Real r = _r_plus * (1-std::exp(-A/(_sigT*_R*_T)));
-
-
-=======
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
  // The permeability is computed by first initializing it:
     RankTwoTensor I = _identity_two;
-    _permeability_qp[_qp] = _km*I;
+    _permeability_qp[_qp] = (_km*I);
 
  // The final/total permeability is the summation over the permeability due to each
  // individual strain corresponding to its unique rotated fracture normal vector.
@@ -205,23 +130,15 @@ ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
    RealVectorValue n_r = rotMat_xy * rotMat_yz * _n.column(i);
 
   // strain due to each fracture normal vector direction
-    _en[_qp] = n_r*(_strain[_qp] * n_r);
+    _en[_qp] = n_r*(raw_value(_strain[_qp]) * n_r);
 
   // The heaviside function (H_de) that implements the macaulay-bracket in Zill et al.
    Real H_de = (_en[_qp] > _eps[i]) ? 1.0 : 0.0;
 
-  // change in fracture aperture according to initial aperture and strain
+  // change in fracture aperture
    Real b_f = _b0 + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
 
-  // final aperture evolution, accounting for the halite dissolution
-<<<<<<< HEAD
-   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _sw[_qp] * (_rho_w/_rho_m) * _rm[_qp] * (_Xnacl[_qp] - _XEQ) * /*_dt*/ _Dt[_qp])));
-//   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _sw[_qp] * (_rho_w/_rho_m) * _r * (_XEQ-_Xnacl[_qp]) * _dt /*_Dt[_qp]*/ )));
-=======
-   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _satLIQUID[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ) * _dt /*_Dt[_qp]*/ )));
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
-
-   Real coeff = H_de * (_b[_qp] / _alpha[i]) * ((_b[_qp] * _b[_qp] / 12.0) - _km);
+   Real coeff = H_de * (b_f / _alpha[i]) * ((b_f * b_f / 12.0) - _km);
 
    RankTwoTensor I = _identity_two;
 

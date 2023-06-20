@@ -1,6 +1,6 @@
 #include "BrineFluidPropertiesBeta.h"
 
-registerMooseObject("FluidPropertiesApp", BrineFluidPropertiesBeta);
+registerMooseObject("ERGSApp", BrineFluidPropertiesBeta);
 
 InputParameters
 BrineFluidPropertiesBeta::validParams()
@@ -41,22 +41,22 @@ BrineFluidPropertiesBeta::haliteSolubilityWater(Real temperature, Real pressure)
   Real pbar = pressure * 1.0e-5;
   Real triplePbar = _p_triple * 1.0e-5;
 
-  Real T_hm = tripleTc + _alpha * (pressure -triplePbar);
+  Real T_hm = tripleTc + _alpha * (pbar - triplePbar);
 
  // Parameters from Driesner (2017):
   Real  e0,e1, e2, e3, e4, e5;
 
-  e0 = 0.0989944 + 3.30796 * 1e-6 * pbar - 4.71759 * 1e-10* pbar * pbar;
-  e1 = 0.00947257 - 8.66460 * 1e-6 * pbar + 1.69417 * 1e-9 * pbar * pbar;
-  e2 = 0.610863 - 1.51716 * 1e-5 * pbar + 1.19290 * 1e-8 * pbar * pbar;
-  e3 = -1.64994 + 2.03441 * 1e-4 * pbar - 6.46015 * 1e-8 * pbar * pbar;
-  e4 = 3.36474 - 1.54023 * 1e-4 * pbar + 8.17048 * 1e-8 * pbar * pbar;
+  e0 = 0.0989944 + (3.30796 * 1e-6 * pbar) - (4.71759 * 1e-10* pbar * pbar);
+  e1 = 0.00947257 - (8.66460 * 1e-6 * pbar) + (1.69417 * 1e-9 * pbar * pbar);
+  e2 = 0.610863 - (1.51716 * 1e-5 * pbar) + (1.19290 * 1e-8 * pbar * pbar);
+  e3 = -1.64994 + (2.03441 * 1e-4 * pbar) - (6.46015 * 1e-8 * pbar * pbar);
+  e4 = 3.36474 - (1.54023 * 1e-4 * pbar) + (8.17048 * 1e-8 * pbar * pbar);
   e5 = 1.0 - e0 - e1 - e2 - e3 - e4;
 
   std::vector<Real> E {e0, e1, e2, e3, e4, e5};
 
 Real X_LSol = 0.0;
-  for (int i = 0; i < 7; i++)
+    for (unsigned int i = 0; i < E.size(); ++i)
      {
        X_LSol += E[i] * std::pow((Tc/T_hm),i);
      }
@@ -91,7 +91,8 @@ BrineFluidPropertiesBeta::haliteSolubilityWater(DualReal temperature, DualReal p
   std::vector<DualReal> E {e0, e1, e2, e3, e4, e5};
 
 DualReal X_LSol = 0.0;
-  for (int i = 0; i < 7; i++)
+
+  for (unsigned int i = 0; i < E.size(); ++i)
      {
        X_LSol += E[i] * std::pow((Tc/T_hm),i);
      }
@@ -101,7 +102,7 @@ DualReal X_LSol = 0.0;
 
 
 Real
-BrineFluidPropertiesBeta::haliteSolubilityGas(Real /*temperature*/, Real pressure) const
+BrineFluidPropertiesBeta::haliteSolubilityGas(/* Real temperature,*/ Real pressure) const
 {
  // This correlation requires pressure in bar
   Real pbar = pressure * 1.0e-5;
@@ -111,10 +112,10 @@ BrineFluidPropertiesBeta::haliteSolubilityGas(Real /*temperature*/, Real pressur
 
 
 DualReal
-BrineFluidPropertiesBeta::haliteSolubilityGas(DualReal temperature, DualReal pressure) const
+BrineFluidPropertiesBeta::haliteSolubilityGas(/*DualReal temperature,*/ DualReal pressure) const
 {
   // This correlation requires temperature in Celcius
-  DualReal Tc = temperature - _T_c2k;
+//  DualReal Tc = temperature - _T_c2k;
  // This correlation requires pressure in bar
   DualReal pbar = pressure * 1.0e-5;
 
@@ -236,4 +237,32 @@ BrineFluidPropertiesBeta::halite_h_from_p_T(
 
   dh_dp = 44.14 * 1.0e-5;
   dh_dT = 8.7664e2 + 2.0 * 6.4139e-2 * Tc + 3.0 * 8.8101e-5 * Tc * Tc;
+}
+
+
+DualReal
+BrineFluidPropertiesBeta::massFractionToMolalConc(DualReal xnacl) const
+{
+  return xnacl / ((1.0 - xnacl) * _Mnacl);
+}
+
+
+DualReal
+BrineFluidPropertiesBeta::vaporPressure(DualReal temperature, DualReal xnacl) const
+{
+  // Correlation requires molal concentration (mol/kg)
+  DualReal mol = massFractionToMolalConc(xnacl);
+  DualReal mol2 = mol * mol;
+  DualReal mol3 = mol2 * mol;
+
+  DualReal a = 1.0 + 5.93582e-6 * mol - 5.19386e-5 * mol2 + 1.23156e-5 * mol3;
+  DualReal b = 1.1542e-6 * mol + 1.41254e-7 * mol2 - 1.92476e-8 * mol3 - 1.70717e-9 * mol * mol3 +
+           1.0539e-10 * mol2 * mol3;
+
+  // The temperature of pure water at the same pressure as the brine is given by
+  DualReal th20 = std::exp(std::log(temperature) / (a + b * temperature));
+
+  // The brine vapour pressure is then found by evaluating the saturation pressure for pure water
+  // using this effective temperature
+  return _water_fp->vaporPressure(th20);
 }
