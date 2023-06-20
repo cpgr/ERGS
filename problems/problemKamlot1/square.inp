@@ -1,0 +1,38 @@
+*Heading
+ \\wsl$\Ubuntu\home\iyevugah\MOOSE\projects\ergs\problems\square.inp
+*NODE
+1, 0, 0, 0
+2, 1, 0, 0
+3, 1, 1, 0
+4, 0, 1, 0
+******* E L E M E N T S *************
+*ELEMENT, type=T3D2, ELSET=Line1
+1, 1, 2
+*ELEMENT, type=T3D2, ELSET=Line2
+2, 2, 3
+*ELEMENT, type=T3D2, ELSET=Line3
+3, 3, 4
+*ELEMENT, type=T3D2, ELSET=Line4
+4, 4, 1
+*ELEMENT, type=CPS4, ELSET=Surface1
+5, 1, 2, 3, 4
+*ELSET,ELSET=inlet
+4, 
+*ELSET,ELSET=outlet
+2, 
+*ELSET,ELSET=top
+3, 
+*ELSET,ELSET=bottom
+1, 
+*ELSET,ELSET=domain
+5, 
+*NSET,NSET=inlet
+1, 4, 
+*NSET,NSET=outlet
+2, 3, 
+*NSET,NSET=top
+3, 4, 
+*NSET,NSET=bottom
+1, 2, 
+*NSET,NSET=domain
+1, 2, 3, 4, 

@@ -1,0 +1,50 @@
+*Heading
+ \\wsl$\Ubuntu\home\iyevugah\MOOSE\projects\ergs\problems\cube2.inp
+*NODE
+1, 0, 0, 0
+2, 1, 0, 0
+3, 1, 1, 0
+4, 0, 1, 0
+5, 0, 0, 1
+6, 1, 0, 1
+7, 1, 1, 1
+8, 0, 1, 1
+******* E L E M E N T S *************
+*ELEMENT, type=CPS4, ELSET=Surface1
+1, 1, 2, 3, 4
+*ELEMENT, type=CPS4, ELSET=Surface2
+2, 5, 6, 7, 8
+*ELEMENT, type=CPS4, ELSET=Surface4
+3, 2, 3, 7, 6
+*ELEMENT, type=CPS4, ELSET=Surface6
+4, 4, 1, 5, 8
+*ELEMENT, type=C3D8, ELSET=Volume1
+5, 7, 6, 5, 8, 3, 2, 1, 4
+*ELSET,ELSET=inlet
+4, 
+*ELSET,ELSET=outlet
+3, 
+*ELSET,ELSET=top
+2, 
+*ELSET,ELSET=bottom
+1, 
+*ELSET,ELSET=front
+2, 
+*ELSET,ELSET=back
+1, 
+*ELSET,ELSET=fluid_domain
+5, 
+*NSET,NSET=inlet
+1, 4, 5, 8, 
+*NSET,NSET=outlet
+2, 3, 6, 7, 
+*NSET,NSET=top
+5, 6, 7, 8, 
+*NSET,NSET=bottom
+1, 2, 3, 4, 
+*NSET,NSET=front
+5, 6, 7, 8, 
+*NSET,NSET=back
+1, 2, 3, 4, 
+*NSET,NSET=fluid_domain
+1, 2, 3, 4, 5, 6, 7, 8, 
