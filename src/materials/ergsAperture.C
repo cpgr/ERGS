@@ -32,13 +32,9 @@ ergsAperture::ergsAperture(const InputParameters & parameters)
     _rm(coupledValue("rm")),
     _Dt(coupledValue("Dt")),
     _XEQ(getParam<Real>("XEQ")),
-<<<<<<< HEAD
-    _aperture_old(coupledValueOld("initial_fracture_aperture_input")),
-    _aperture(coupledValue("initial_fracture_aperture_input"))
-=======
+  // _aperture_old(coupledValueOld("initial_fracture_aperture_input")),
     _aperture(coupledValue("initial_fracture_aperture_input"))
   //  _XEQ(getParam<Real>("temperature_unit") == 0 ? 0.0 : 273.15)
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
 {
 }
 
@@ -55,16 +51,9 @@ void
  {
    if (_rm[_qp] == 0.0)
    {
-<<<<<<< HEAD
      _b[_qp] = _b_old[_qp];  //_aperture_old[_qp];  //
    }
    else
   _b[_qp] = _b_old[_qp] - ( _b_old[_qp] * _satLIQUID[_qp] * 0.5765 * /*_dt*/ _Dt[_qp] * _rm[_qp] * (_Xnacl[_qp] -_XEQ));
 //  _b[_qp] = _aperture_old[_qp] - ( _aperture_old[_qp] * _satLIQUID[_qp] * 0.5765 * /*_dt*/ _Dt[_qp] * _rm[_qp] * (_Xnacl[_qp] -_XEQ));
-=======
-     _b[_qp] = _b_old[_qp];
-   }
-   else
-  _b[_qp] = _b_old[_qp] - ( _b_old[_qp] * _satLIQUID[_qp] * 0.5765 * _dt /*_Dt[_qp]*/ * _rm[_qp] * (_Xnacl[_qp] -_XEQ));
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
- }
+}

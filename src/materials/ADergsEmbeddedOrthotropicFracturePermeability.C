@@ -146,7 +146,7 @@ ADergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
    Real b_f = _b0 + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
 
   // final aperture evolution, accounting for the halite dissolution
-   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _satLIQUID[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ)* /*_dt*/ _Dt[_qp] )));
+   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _sw[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ)* /*_dt*/ _Dt[_qp] )));
 
     Real coeff = H_de * (_b[_qp] / _alpha[i]) * ((_b[_qp] * _b[_qp] / 12.0) - _km);
 

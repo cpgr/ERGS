@@ -28,10 +28,7 @@ PorousFlowEffectivePorosityConst::initQpStatefulProperties()
 {
   // note the [0] below: _phi0 is a constant monomial and we use [0] regardless of _nodal_material
   _porosity[_qp] = _input_porosity[0] * (1.0 - _solid_sat[0]);
-<<<<<<< HEAD
 //   _console << "solid_sat = " << _solid_sat[0] << std::endl;
-=======
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
 }
 
 void

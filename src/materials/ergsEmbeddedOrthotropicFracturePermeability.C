@@ -34,7 +34,6 @@ ergsEmbeddedOrthotropicFracturePermeability::validParams()
   InputParameters params = PorousFlowEmbeddedOrthotropicFracturePermeability::validParams();
   params.addClassDescription(
   " Derived material class from PorousFlowEmbeddedOrthotropicFracturePermeability that computes"
-<<<<<<< HEAD
   " the permeability using extra aperture change due to halite dissolution. This extra aperture"
   " change is computed from various coupled variables.");
   params.addParam<Real>("rho_w", 1250, "water density");
@@ -52,11 +51,6 @@ ergsEmbeddedOrthotropicFracturePermeability::validParams()
   params.addRequiredCoupledVar("aperture_old", "initial aperture field");
 */
   params.addRequiredCoupledVar("sw", "water saturation");
-=======
-  " the permeability using extra apertute change due to halite dissolution. This extra aperture"
-  " change is computed from various coupled variables.");
-  params.addRequiredCoupledVar("satLIQUID", "liquid saturation");
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
   params.addRequiredCoupledVar("Xnacl", "Fluid temperature");
   params.addRequiredCoupledVar("rm", "mineral precipitation coefficient");
   params.addRequiredCoupledVar("Dt", "time step");
@@ -73,7 +67,6 @@ ergsEmbeddedOrthotropicFracturePermeability::ergsEmbeddedOrthotropicFracturePerm
       _b_old(_nodal_material
                        ? getMaterialPropertyOld<Real>("initial_fracture_aperture_nodal")
                        : getMaterialPropertyOld<Real>("initial_fracture_aperture_qp")),
-<<<<<<< HEAD
       _rho_w(getParam<Real>("rho_w")),
       _rho_m(getParam<Real>("rho_m")),
 /*
@@ -89,9 +82,6 @@ ergsEmbeddedOrthotropicFracturePermeability::ergsEmbeddedOrthotropicFracturePerm
       _aperture_old(coupledValue("aperture_old")),
 */
       _sw(coupledValue("sw")),
-=======
-      _satLIQUID(coupledValue("satLIQUID")),
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
       _Xnacl(coupledValue("Xnacl")),
       _rm(coupledValue("rm")),
       _Dt(coupledValue("Dt")),
@@ -173,8 +163,6 @@ ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
     rotMat_yz(2, 0) = 0;
     rotMat_yz(2, 1) = std::sin(_randm_rad_yz[_qp]);
     rotMat_yz(2, 2) = std::cos(_randm_rad_yz[_qp]);
-
-<<<<<<< HEAD
 /*
   /* compute the halite dissolution rate according to Seales et. al. (2016)*/
     // activity of the various ions (i.e., Na and Cl)
@@ -188,8 +176,6 @@ ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
 //    Real r = _r_plus * (1-std::exp(-A/(_sigT*_R*_T)));
 
 
-=======
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
  // The permeability is computed by first initializing it:
     RankTwoTensor I = _identity_two;
     _permeability_qp[_qp] = _km*I;
@@ -214,12 +200,8 @@ ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
    Real b_f = _b0 + (H_de * _alpha[i] * (_en[_qp] - _eps[i]));
 
   // final aperture evolution, accounting for the halite dissolution
-<<<<<<< HEAD
    _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _sw[_qp] * (_rho_w/_rho_m) * _rm[_qp] * (_Xnacl[_qp] - _XEQ) * /*_dt*/ _Dt[_qp])));
 //   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _sw[_qp] * (_rho_w/_rho_m) * _r * (_XEQ-_Xnacl[_qp]) * _dt /*_Dt[_qp]*/ )));
-=======
-   _b[_qp] = b_f + (_b_old[_qp] * (1-( 1 * _satLIQUID[_qp] * 0.5765 * _rm[_qp] * (_Xnacl[_qp] -_XEQ) * _dt /*_Dt[_qp]*/ )));
->>>>>>> fa8d13a4367031760e0912c0bfb31b46650e4c5c
 
    Real coeff = H_de * (_b[_qp] / _alpha[i]) * ((_b[_qp] * _b[_qp] / 12.0) - _km);
 
