@@ -47,8 +47,8 @@ protected:
 	MaterialProperty<Real>& _b;
 	const MaterialProperty<Real>& _b_old;
 
-	/// liquid saturation
-	const VariableValue& _satLIQUID;
+	/// water saturation
+	const VariableValue& _sw;
 
 	/// salt mass fraction
 	const VariableValue& _Xnacl;
@@ -61,4 +61,10 @@ protected:
 	//	const Real _rm;
 
 	const VariableValue& _Dt;
+
+	/// density of water 
+	const Real  _rho_w;
+
+	/// density of halite 
+	const Real  _rho_m;
 };
