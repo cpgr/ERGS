@@ -37,6 +37,6 @@ PorousFlowEffectivePorosityConst::computeQpProperties()
   initQpStatefulProperties();
 
   // The derivatives are zero for all time
-  _dporosity_dvar[_qp].assign(_num_var, 0.0);
-  _dporosity_dgradvar[_qp].assign(_num_var, RealGradient());
+  (*_dporosity_dvar)[_qp].assign(_num_var, 0.0);
+  (*_dporosity_dgradvar)[_qp].assign(_num_var, RealGradient());
 }

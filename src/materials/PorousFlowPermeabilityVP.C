@@ -37,8 +37,8 @@ PorousFlowPermeabilityVP::computeQpProperties()
    Real numer = std::pow(theta,2.0) * 1.0 - _Gamma + (_Gamma/std::pow(omega, 2.0));
    Real deno = 1.0 - _Gamma + _Gamma * (std::pow((theta/(theta + omega - 1.0)), 2.0));
   _permeability_qp[_qp] = _input_initial_permeability * (numer/deno);
-  _dpermeability_qp_dvar[_qp].assign(_num_var, RealTensorValue());
-  _dpermeability_qp_dgradvar[_qp].resize(LIBMESH_DIM);
+  (*_dpermeability_qp_dvar)[_qp].assign(_num_var, RealTensorValue());
+  (*_dpermeability_qp_dgradvar)[_qp].resize(LIBMESH_DIM);
   for (unsigned i = 0; i < LIBMESH_DIM; ++i)
-    _dpermeability_qp_dgradvar[_qp][i].assign(_num_var, RealTensorValue());
+    (*_dpermeability_qp_dgradvar)[_qp][i].assign(_num_var, RealTensorValue());
 }
