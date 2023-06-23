@@ -15,14 +15,13 @@ public:
 protected:
   void computeQpProperties() override;
 
-  /// Constant value of permeability tensor
-  const RealTensorValue _input_initial_permeability;
-  
   /// solid saturation (Ss)
   const VariableValue& _solid_sat;
 
   // independent geometric parameters in Verma and Pruess
   const Real _Gamma;
   const Real _theta_r;
-  //Const
+
+  /// Constant value of permeability tensor
+  const RealTensorValue _input_initial_permeability;
 };

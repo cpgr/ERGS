@@ -518,7 +518,7 @@ PorousFlowBrineSaltCO2::saturationSOLID(const DualReal & pressure,
                                         std::vector<FluidStateProperties> & fsp) const
 {
   auto & liquid = fsp[_aqueous_fluid_component];
-  FluidStateProperties & solid = fsp[_solid_phase_number];
+  // FluidStateProperties & solid = fsp[_solid_phase_number];
 
   // Solid phase saturation is computed from Xnacl, XEQ, brine and halite densities:
   // compute the halite density

@@ -98,6 +98,7 @@ failed-unittest
 compile_commands.json
 build
 **/libtorch
+ergs.yaml
 
 # Allow certain files in gold directories
 !**/gold/*.e

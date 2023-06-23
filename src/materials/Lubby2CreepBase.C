@@ -83,16 +83,16 @@ Lubby2CreepBaseTempl<is_ad>::Lubby2CreepBaseTempl(const InputParameters & parame
     _GK0(this->template getParam<Real>("GK0")),
     _kelvin_creep_strain(this->template declareGenericProperty<Real, is_ad>("kelvin_creep_strain")),
     _kelvin_creep_strain_old(this->template getMaterialPropertyOld<Real>("kelvin_creep_strain")),
-    _Stensor(parameters.isParamValid("Stensor")
-              ? this->template getParam<RealTensorValue>("Stensor")
-              : RealTensorValue(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)), //RankTwoTensor
-    _smin_fix (this->template getParam<Real>("smin_fix")),
-    _smin_ramp(this->template coupledValue("smin_ramp")),
+    _uniaxial_test(parameters.get<bool>("uniaxial_test")),
     _smin_function(parameters.get<bool>("smin_function")),
-    _smax_fix(this->template getParam<Real>("smax_fix")),
-    _smax_ramp(this->template coupledValue("smax_ramp")),
+    _smin_ramp(coupledValue("smin_ramp")),
+    _smin_fix(this->template getParam<Real>("smin_fix")),
     _smax_function(parameters.get<bool>("smax_function")),
-    _uniaxial_test(parameters.get<bool>("uniaxial_test"))
+    _smax_ramp(coupledValue("smax_ramp")),
+    _smax_fix(this->template getParam<Real>("smax_fix")),
+    _Stensor(parameters.isParamValid("Stensor")
+                 ? this->template getParam<RealTensorValue>("Stensor")
+                 : RealTensorValue(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)) // RankTwoTensor
 {
   if (_etaM0 == 0.0 && _etaK0 == 0.0)
     mooseError("Lubby2CreepBase: at least one of the creep should be active.");
@@ -115,12 +115,11 @@ Lubby2CreepBaseTempl<is_ad>::propagateQpStatefulProperties()
   RadialReturnStressUpdateTempl<is_ad>::propagateQpStatefulPropertiesRadialReturn();
 }
 
-
 template <bool is_ad>
 void
 Lubby2CreepBaseTempl<is_ad>::computeStressInitialize(
-    const GenericReal<is_ad> & effective_trial_stress,
-    const GenericRankFourTensor<is_ad> & elasticity_tensor)
+    const GenericReal<is_ad> & /* effective_trial_stress */,
+    const GenericRankFourTensor<is_ad> & /* elasticity_tensor */)
 {
   _kelvin_creep_strain[_qp] = _kelvin_creep_strain_old[_qp];
 }
@@ -213,8 +212,9 @@ return (creep_rate * _dt) - scalar;
 /// Activate the Derivatives when automatic_differentiation = false
 template <bool is_ad>
 GenericReal<is_ad>
-Lubby2CreepBaseTempl<is_ad>::computeDerivative(const GenericReal<is_ad> & effective_trial_stress,
-                                            const GenericReal<is_ad> & scalar)
+Lubby2CreepBaseTempl<is_ad>::computeDerivative(
+    const GenericReal<is_ad> & /* effective_trial_stress */,
+    const GenericReal<is_ad> & /* scalar */)
 {
   return 0.0;
 }

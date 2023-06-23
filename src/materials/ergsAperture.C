@@ -20,21 +20,19 @@ ergsAperture::validParams()
 ergsAperture::ergsAperture(const InputParameters & parameters)
   : PorousFlowMaterial(parameters),
 
-    _b(_nodal_material
-                     ? declareProperty<Real>("initial_fracture_aperture_nodal")
-                     : declareProperty<Real>("initial_fracture_aperture_qp")),
-    _b_old(_nodal_material
-                     ? getMaterialPropertyOld<Real>("initial_fracture_aperture_nodal")
-                     : getMaterialPropertyOld<Real>("initial_fracture_aperture_qp")),
+    _b(_nodal_material ? declareProperty<Real>("initial_fracture_aperture_nodal")
+                       : declareProperty<Real>("initial_fracture_aperture_qp")),
+    _b_old(_nodal_material ? getMaterialPropertyOld<Real>("initial_fracture_aperture_nodal")
+                           : getMaterialPropertyOld<Real>("initial_fracture_aperture_qp")),
 
     _satLIQUID(coupledValue("satLIQUID")),
     _Xnacl(coupledValue("Xnacl")),
-    _rm(coupledValue("rm")),
-    _Dt(coupledValue("Dt")),
+    // _aperture_old(coupledValueOld("initial_fracture_aperture_input")),
+    _aperture(coupledValue("initial_fracture_aperture_input")),
     _XEQ(getParam<Real>("XEQ")),
-  // _aperture_old(coupledValueOld("initial_fracture_aperture_input")),
-    _aperture(coupledValue("initial_fracture_aperture_input"))
-  //  _XEQ(getParam<Real>("temperature_unit") == 0 ? 0.0 : 273.15)
+    _rm(coupledValue("rm")),
+    _Dt(coupledValue("Dt"))
+//  _XEQ(getParam<Real>("temperature_unit") == 0 ? 0.0 : 273.15)
 {
 }
 

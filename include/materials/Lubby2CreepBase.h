@@ -56,21 +56,6 @@ protected:
     return computeResidualInternal<GenericChainedReal<is_ad>>(effective_trial_stress, scalar);
   }
 
-
-  /// whether the creep test is uniaxial or triaxial (von-mises stress is computed differently)
-  bool _uniaxial_test;
-
-
-  /// whether the applied minimum/confining stress depends on time or fix
-  bool _smin_function;
-  const VariableValue& _smin_ramp;
-  Real _smin_fix;
-
-  /// whether the maximum applied stress depends on time or fix
-  bool _smax_function;
-  const VariableValue& _smax_ramp;
-  Real _smax_fix;
-
   /// Maxwell initial viscosity
   const Real _etaM0;
   /// Maxwell viscosity parameter
@@ -86,6 +71,19 @@ protected:
 
   GenericMaterialProperty<Real, is_ad> & _kelvin_creep_strain;
   const MaterialProperty<Real> & _kelvin_creep_strain_old;
+
+  /// whether the creep test is uniaxial or triaxial (von-mises stress is computed differently)
+  bool _uniaxial_test;
+
+  /// whether the applied minimum/confining stress depends on time or fix
+  bool _smin_function;
+  const VariableValue & _smin_ramp;
+  Real _smin_fix;
+
+  /// whether the maximum applied stress depends on time or fix
+  bool _smax_function;
+  const VariableValue & _smax_ramp;
+  Real _smax_fix;
 
   // The (applied) stress responsible for the creep (or strain-rate) as a single value
   const RankTwoTensor _Stensor;
@@ -103,6 +101,7 @@ protected:
   using RadialReturnCreepStressUpdateBaseTempl<is_ad>::_three_shear_modulus;
   using RadialReturnCreepStressUpdateBaseTempl<is_ad>::_creep_strain;
   using RadialReturnCreepStressUpdateBaseTempl<is_ad>::_creep_strain_old;
+  using Coupleable::coupledValue;
 
 private:
 

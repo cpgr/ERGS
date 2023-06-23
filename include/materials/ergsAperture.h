@@ -5,7 +5,7 @@
 /**
  * The ergsAperture material computes the initial fracture aperture (b0) based on
  * a lagged approach consisting of the old state of the initial fracture aperture (b0_old),
- * mineral precipitation rate coefficient (rm), salt mass fraction (Xnacl), salt solubility 
+ * mineral precipitation rate coefficient (rm), salt mass fraction (Xnacl), salt solubility
  * limit (XEQ) and liquid saturation (satLIQUID).
  */
 
@@ -16,8 +16,8 @@ public:
 
   ergsAperture(const InputParameters & parameters);
 
-  virtual void initQpStatefulProperties();
- // virtual void propagateQpStatefulProperties();
+  virtual void initQpStatefulProperties() override;
+  // virtual void propagateQpStatefulProperties();
 
 
 protected:

@@ -28,10 +28,9 @@
 #include <Eigen/Geometry>
 
 /**
- * Alternative version of ergsEmbeddedFracturePermeability. This material obtains the 
- * Automatic Differentiation of the total stress and total creep strain. 
+ * Alternative version of ergsEmbeddedFracturePermeability. This material obtains the
+ * Automatic Differentiation of the total stress and total creep strain.
  */
-
 
 class ADergsEmbeddedFracturePermeability : public ergsEmbeddedFracturePermeability
 {
@@ -40,9 +39,9 @@ public:
 
 	ADergsEmbeddedFracturePermeability(const InputParameters& parameters);
 
-	virtual void initQpStatefulProperties();
+  virtual void initQpStatefulProperties() override;
 
-	void computeQpProperties() override;
+  void computeQpProperties() override;
 
 protected:
 	/// get the AD of total stress tensor

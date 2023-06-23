@@ -28,7 +28,7 @@
 #include <Eigen/Geometry>
 
 /**
- * Derived material class from PorousFlowEmbeddedFracturePermeability that obtains the initial 
+ * Derived material class from PorousFlowEmbeddedFracturePermeability that obtains the initial
  * fracture aperture as a coupled variable instead of an ordinary parameter. This initial
  * fracture aperture affects the permeability.
  */
@@ -39,9 +39,9 @@ public:
 
 	ergsEmbeddedFracturePermeability(const InputParameters& parameters);
 
-	virtual void initQpStatefulProperties();
+  virtual void initQpStatefulProperties() override;
 
-	void computeQpProperties() override;
+  void computeQpProperties() override;
 
 protected:
 
@@ -55,12 +55,12 @@ protected:
 	/// salt mass fraction
 	const VariableValue& _Xnacl;
 
-	/// salt solubility limit
-	const Real _XEQ;
-
 	/// mineral precipitation rate coefficient
 	const VariableValue& _rm;
 	//	const Real _rm;
 
 	const VariableValue& _Dt;
+
+		/// salt solubility limit
+	const Real _XEQ;
 };

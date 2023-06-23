@@ -348,8 +348,8 @@ void
 PorousFlowBrineSaltNCG::gasProperties(const DualReal & pressure,
                                       const DualReal & temperature,
                                       const DualReal & Xnacl,
-                                      const DualReal & Z,
-                                     std::vector<FluidStateProperties> & fsp) const
+                                      const DualReal & /* Z */,
+                                      std::vector<FluidStateProperties> & fsp) const
 {
   FluidStateProperties & liquid = fsp[_aqueous_phase_number];
   FluidStateProperties & gas = fsp[_gas_phase_number];
@@ -473,7 +473,7 @@ PorousFlowBrineSaltNCG::saturationGAS(const DualReal & pressure,
 {
   auto & gas = fsp[_gas_phase_number];
   auto & liquid = fsp[_aqueous_fluid_component];
-  FluidStateProperties & solid = fsp[_solid_phase_number];
+  // FluidStateProperties & solid = fsp[_solid_phase_number];
 
   // Approximate liquid density as saturation isn't known yet, by using the gas
   // pressure rather than the liquid pressure. This does result in a small error
@@ -527,7 +527,7 @@ PorousFlowBrineSaltNCG::saturationSOLID(const DualReal & pressure,
                                         std::vector<FluidStateProperties> & fsp) const
 {
   auto & liquid = fsp[_aqueous_fluid_component];
-  FluidStateProperties & solid = fsp[_solid_phase_number];
+  // FluidStateProperties & solid = fsp[_solid_phase_number];
 
   // Solid phase saturation is computed from Xnacl, XEQ, brine and halite densities:
   // compute the halite density
@@ -586,17 +586,17 @@ PorousFlowBrineSaltNCG::MultiPhaseProperties(const DualReal & pressure,
   solidProperties(pressure, temperature, fsp);
 }
 
-
 void
-PorousFlowBrineSaltNCG::equilibriumMassFractions(const DualReal & pressure,
-                                                 const DualReal & temperature,
-                                                 const DualReal & Xnacl,
-                                                 const DualReal & Z,
-                                                 DualReal & Xncg,
-                                                 DualReal & Yh2o,
-                                                 DualReal & Ynacl,
-                                                 DualReal & Snacl,
-                                                 std::vector<FluidStateProperties> & fsp) const
+PorousFlowBrineSaltNCG::equilibriumMassFractions(
+    const DualReal & pressure,
+    const DualReal & temperature,
+    const DualReal & Xnacl,
+    const DualReal & /* Z */,
+    DualReal & Xncg,
+    DualReal & Yh2o,
+    DualReal & Ynacl,
+    DualReal & Snacl,
+    std::vector<FluidStateProperties> & /* fsp */) const
 {
   // Equilibrium constants for each component (Henry's law for the NCG
   // component, and Raoult's law for water).

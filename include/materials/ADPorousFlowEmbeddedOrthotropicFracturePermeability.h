@@ -38,9 +38,9 @@ public:
 	ADPorousFlowEmbeddedOrthotropicFracturePermeability(const InputParameters& parameters);
 
 protected:
-	void computeQpProperties() ;
+  void computeQpProperties() override;
 
-	/// get the AD of total stress tensor
+  /// get the AD of total stress tensor
 	const ADMaterialProperty<RankTwoTensor>& _stress;
 
 	/// get the AD of total creep strain tensor (actually, this is the creep strain)

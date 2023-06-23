@@ -61,31 +61,29 @@ ergsEmbeddedOrthotropicFracturePermeability::validParams()
 ergsEmbeddedOrthotropicFracturePermeability::ergsEmbeddedOrthotropicFracturePermeability(
     const InputParameters & parameters)
   : PorousFlowEmbeddedOrthotropicFracturePermeability(parameters),
-      _b(_nodal_material
-                       ? declareProperty<Real>("initial_fracture_aperture_nodal")
+    _b(_nodal_material ? declareProperty<Real>("initial_fracture_aperture_nodal")
                        : declareProperty<Real>("initial_fracture_aperture_qp")),
-      _b_old(_nodal_material
-                       ? getMaterialPropertyOld<Real>("initial_fracture_aperture_nodal")
-                       : getMaterialPropertyOld<Real>("initial_fracture_aperture_qp")),
-      _rho_w(getParam<Real>("rho_w")),
-      _rho_m(getParam<Real>("rho_m")),
-/*
-      _r_plus(getParam<Real>("r_plus")),
-      _R(getParam<Real>("R")),
-      _T(getParam<Real>("T")),
-      _sig(getParam<Real>("sig")),
-      _K(getParam<Real>("K")),
-      _gamma_Na(getParam<Real>("gamma_Na")),
-      _gamma_Cl(getParam<Real>("gamma_Cl")),
-      _c_Na(getParam<Real>("c_Na")),
-      _c_Cl(getParam<Real>("c_Cl")),
-      _aperture_old(coupledValue("aperture_old")),
-*/
-      _sw(coupledValue("sw")),
-      _Xnacl(coupledValue("Xnacl")),
-      _rm(coupledValue("rm")),
-      _Dt(coupledValue("Dt")),
-      _XEQ(getParam<Real>("XEQ"))
+    _b_old(_nodal_material ? getMaterialPropertyOld<Real>("initial_fracture_aperture_nodal")
+                           : getMaterialPropertyOld<Real>("initial_fracture_aperture_qp")),
+    /*
+          _r_plus(getParam<Real>("r_plus")),
+          _R(getParam<Real>("R")),
+          _T(getParam<Real>("T")),
+          _sig(getParam<Real>("sig")),
+          _K(getParam<Real>("K")),
+          _gamma_Na(getParam<Real>("gamma_Na")),
+          _gamma_Cl(getParam<Real>("gamma_Cl")),
+          _c_Na(getParam<Real>("c_Na")),
+          _c_Cl(getParam<Real>("c_Cl")),
+          _aperture_old(coupledValue("aperture_old")),
+    */
+    _sw(coupledValue("sw")),
+    _Xnacl(coupledValue("Xnacl")),
+    _XEQ(getParam<Real>("XEQ")),
+    _rm(coupledValue("rm")),
+    _Dt(coupledValue("Dt")),
+    _rho_w(getParam<Real>("rho_w")),
+    _rho_m(getParam<Real>("rho_m"))
 {
 }
 
@@ -163,20 +161,20 @@ ergsEmbeddedOrthotropicFracturePermeability::computeQpProperties()
     rotMat_yz(2, 0) = 0;
     rotMat_yz(2, 1) = std::sin(_randm_rad_yz[_qp]);
     rotMat_yz(2, 2) = std::cos(_randm_rad_yz[_qp]);
-/*
-  /* compute the halite dissolution rate according to Seales et. al. (2016)*/
-    // activity of the various ions (i.e., Na and Cl)
-//    Real a_Na = _gamma_Na * c_Na;
-//    Real a_Cl = _gamma_Cl * c_Cl;
-    // compute the reaction ionic activity product
-//    Real Q = a_Na + a_Cl;
-    // compute the chemical affinity
-//    Real A = -(_R *_T)*std::log(Q/_K);
-    //finally, the reaction rate
-//    Real r = _r_plus * (1-std::exp(-A/(_sigT*_R*_T)));
+    /*
+     compute the halite dissolution rate according to Seales et. al. (2016)
+        // activity of the various ions (i.e., Na and Cl)
+    //    Real a_Na = _gamma_Na * c_Na;
+    //    Real a_Cl = _gamma_Cl * c_Cl;
+        // compute the reaction ionic activity product
+    //    Real Q = a_Na + a_Cl;
+        // compute the chemical affinity
+    //    Real A = -(_R *_T)*std::log(Q/_K);
+        //finally, the reaction rate
+    //    Real r = _r_plus * (1-std::exp(-A/(_sigT*_R*_T)));
+    */
 
-
- // The permeability is computed by first initializing it:
+    // The permeability is computed by first initializing it:
     RankTwoTensor I = _identity_two;
     _permeability_qp[_qp] = _km*I;
 

@@ -26,8 +26,8 @@
 #include "PorousFlowEmbeddedOrthotropicFracturePermeability.h"
 
 /**
- * Derived material class from PorousFlowEmbeddedOrthotropicFracturePermeability that obtains the 
- * initial fracture aperture as a coupled variable instead of an ordinary parameter. This initial 
+ * Derived material class from PorousFlowEmbeddedOrthotropicFracturePermeability that obtains the
+ * initial fracture aperture as a coupled variable instead of an ordinary parameter. This initial
  * fracture aperture affects the permeability.
  */
 
@@ -38,9 +38,9 @@ public:
 
 	ergsEmbeddedOrthotropicFracturePermeability(const InputParameters& parameters);
 
-	virtual void initQpStatefulProperties();
+  virtual void initQpStatefulProperties() override;
 
-	void computeQpProperties() override;
+  void computeQpProperties() override;
 
 protected:
 	/// initial fracture aperture
@@ -62,9 +62,9 @@ protected:
 
 	const VariableValue& _Dt;
 
-	/// density of water 
-	const Real  _rho_w;
+  /// density of water
+  const Real  _rho_w;
 
-	/// density of halite 
-	const Real  _rho_m;
+  /// density of halite
+  const Real  _rho_m;
 };
